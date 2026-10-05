@@ -1,0 +1,28 @@
+<%# locals: (item:, members:) %>
+
+  <a class="<%== item.unread ? "direct unread" : "direct" %>" id="list_rooms_direct_<%== item.room_id %>" data-rooms-list-target="room" data-room-id="<%== item.room_id %>" data-badge-dot-target="unread" data-sorted-list-target="item" data-sorted-list-number="<%== Clock.epoch_ms(item.room_updated_at) %>" href="/rooms/<%== item.room_id %>">
+<% if members.size > 1 %>
+      <div class="avatar__group">
+<% members.first(4).each do |id, _, updated_at| %>
+          <span class="avatar">
+            <img aria-hidden="true" src="<%== fresh_user_avatar_path(id, updated_at) %>" width="20" height="20" />
+          </span>
+<% end %>
+      </div>
+<% else %>
+      <span class="avatar">
+        <img aria-hidden="true" src="<%== fresh_user_avatar_path(members[0][0], members[0][2]) %>" width="48" height="48" />
+      </span>
+<% end %>
+
+    <span class="direct__author flex align-center gap max-width min-width border-radius txt-small">
+      <span class="txt-nowrap overflow-ellipsis">
+        <span class="for-screen-reader">Ping with</span>
+<% if members.size > 1 %>
+          <%= Sidebar.initials_sentence(members.map { |m| m[1] }) %>
+<% else %>
+          <%= first_word(members[0][1]) %>
+<% end %>
+      </span>
+    </span>
+</a>

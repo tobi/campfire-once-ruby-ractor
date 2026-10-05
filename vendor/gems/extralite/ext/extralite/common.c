@@ -1,0 +1,1113 @@
+#include <stdio.h>
+#include "extralite.h"
+
+rb_encoding *UTF8_ENCODING;
+
+inline void *gvl_call(enum gvl_mode mode, void *(*fn)(void *), void *data) {
+  switch (mode) {
+    case GVL_RELEASE:
+      return rb_thread_call_without_gvl(fn, data, RUBY_UBF_IO, 0);
+    default:
+      return fn(data);
+  }
+}
+
+static inline VALUE get_column_value(sqlite3_stmt *stmt, int col, int type) {
+  switch (type) {
+    case SQLITE_NULL:
+      return Qnil;
+    case SQLITE_INTEGER:
+      return LL2NUM(sqlite3_column_int64(stmt, col));
+    case SQLITE_FLOAT:
+      return DBL2NUM(sqlite3_column_double(stmt, col));
+    case SQLITE_TEXT:
+      return rb_enc_str_new((char *)sqlite3_column_text(stmt, col), (long)sqlite3_column_bytes(stmt, col), UTF8_ENCODING);
+    case SQLITE_BLOB:
+      return rb_str_new((const char *)sqlite3_column_blob(stmt, col), (long)sqlite3_column_bytes(stmt, col));
+    default:
+      rb_raise(cError, "Unknown column type: %d", type);
+  }
+
+  return Qnil;
+}
+
+int bind_parameter_value(sqlite3_stmt *stmt, int pos, VALUE value);
+
+static inline void bind_key_value(sqlite3_stmt *stmt, VALUE k, VALUE v) {
+  switch (TYPE(k)) {
+    case T_FIXNUM:
+      bind_parameter_value(stmt, FIX2INT(k), v);
+      break;
+    case T_SYMBOL:
+      k = rb_sym2str(k);
+    case T_STRING:
+      if (RSTRING_PTR(k)[0] != ':') k = rb_str_plus(rb_str_new2(":"), k);
+      int pos = sqlite3_bind_parameter_index(stmt, StringValuePtr(k));
+      bind_parameter_value(stmt, pos, v);
+      break;
+    default:
+      rb_raise(cParameterError, "Cannot bind parameter with a key of type %"PRIsVALUE"",
+        rb_class_name(rb_obj_class(k)));
+  }
+}
+
+void bind_hash_parameter_values(sqlite3_stmt *stmt, VALUE hash) {
+  VALUE keys = rb_funcall(hash, ID_keys, 0);
+  long len = RARRAY_LEN(keys);
+  for (long i = 0; i < len; i++) {
+    VALUE k = RARRAY_AREF(keys, i);
+    VALUE v = rb_hash_aref(hash, k);
+    bind_key_value(stmt, k, v);
+  }
+  RB_GC_GUARD(keys);
+}
+
+void bind_struct_parameter_values(sqlite3_stmt *stmt, VALUE struct_obj) {
+  VALUE members = rb_struct_members(struct_obj);
+  for (long i = 0; i < RSTRUCT_LEN(struct_obj); i++) {
+    VALUE k = rb_ary_entry(members, i);
+    VALUE v = RSTRUCT_GET(struct_obj, i);
+    bind_key_value(stmt, k, v);
+  }
+  RB_GC_GUARD(members);
+}
+
+inline int bind_parameter_value(sqlite3_stmt *stmt, int pos, VALUE value) {
+  switch (TYPE(value)) {
+    case T_NIL:
+      sqlite3_bind_null(stmt, pos);
+      return 1;
+    case T_FIXNUM:
+    case T_BIGNUM:
+      sqlite3_bind_int64(stmt, pos, NUM2LL(value));
+      return 1;
+    case T_FLOAT:
+      sqlite3_bind_double(stmt, pos, NUM2DBL(value));
+      return 1;
+    case T_TRUE:
+      sqlite3_bind_int(stmt, pos, 1);
+      return 1;
+    case T_FALSE:
+      sqlite3_bind_int(stmt, pos, 0);
+      return 1;
+    case T_SYMBOL:
+      value = rb_sym2str(value);
+    case T_STRING:
+      if (rb_enc_get_index(value) == rb_ascii8bit_encindex() || CLASS_OF(value) == cBlob)
+        sqlite3_bind_blob(stmt, pos, RSTRING_PTR(value), RSTRING_LEN(value), SQLITE_TRANSIENT);
+      else
+        sqlite3_bind_text(stmt, pos, RSTRING_PTR(value), RSTRING_LEN(value), SQLITE_TRANSIENT);
+      return 1;
+    case T_ARRAY:
+      {
+        int count = RARRAY_LEN(value);
+        for (int i = 0; i < count; i++)
+          bind_parameter_value(stmt, pos + i, RARRAY_AREF(value, i));
+        return count;
+      }
+    case T_HASH:
+      bind_hash_parameter_values(stmt, value);
+      return 0;
+    case T_STRUCT:
+      bind_struct_parameter_values(stmt, value);
+      return 0;
+    default:
+      rb_raise(cParameterError, "Cannot bind parameter at position %d of type %"PRIsVALUE"",
+        pos, rb_class_name(rb_obj_class(value)));
+  }
+}
+
+inline void bind_all_parameters(sqlite3_stmt *stmt, int argc, VALUE *argv) {
+  int pos = 1;
+  for (int i = 0; i < argc; i++) {
+    pos += bind_parameter_value(stmt, pos, argv[i]);
+  }
+}
+
+inline void bind_all_parameters_from_object(sqlite3_stmt *stmt, VALUE obj) {
+  if (TYPE(obj) == T_ARRAY) {
+    int pos = 1;
+    int count = RARRAY_LEN(obj);
+    for (int i = 0; i < count; i++)
+      pos += bind_parameter_value(stmt, pos, RARRAY_AREF(obj, i));
+  }
+  else
+    bind_parameter_value(stmt, 1, obj);
+}
+
+#define MAX_EMBEDDED_COLUMN_NAMES 12
+
+struct column_names {
+  int count;
+  union {
+    VALUE array;
+    VALUE names[MAX_EMBEDDED_COLUMN_NAMES];
+  };
+};
+
+static inline void column_names_setup(struct column_names *names, int count) {
+  names->count = count;
+  names->array = (count > MAX_EMBEDDED_COLUMN_NAMES) ? rb_ary_new2(count) : Qnil;
+}
+
+static inline void column_names_set(struct column_names *names, int idx, VALUE value) {
+  if (names->count <= MAX_EMBEDDED_COLUMN_NAMES)
+    names->names[idx] = value;
+  else
+    rb_ary_push(names->array, value);
+}
+
+static inline struct column_names get_column_names(sqlite3_stmt *stmt, int column_count) {
+  struct column_names names;
+  column_names_setup(&names, column_count);
+  for (int i = 0; i < column_count; i++) {
+    VALUE name = ID2SYM(rb_intern(sqlite3_column_name(stmt, i)));
+    column_names_set(&names, i, name);
+  }
+  return names;
+}
+
+static inline VALUE get_column_names_array(sqlite3_stmt *stmt, int column_count) {
+  VALUE arr = rb_ary_new2(column_count);
+  for (int i = 0; i < column_count; i++) {
+    VALUE name = ID2SYM(rb_intern(sqlite3_column_name(stmt, i)));
+    rb_ary_push(arr, name);
+  }
+  return arr;
+}
+
+static inline VALUE row_to_hash(sqlite3_stmt *stmt, int column_count, struct column_names *names) {
+  VALUE row = rb_hash_new();
+  if (names->count <= MAX_EMBEDDED_COLUMN_NAMES) {
+    for (int i = 0; i < column_count; i++) {
+      VALUE value = get_column_value(stmt, i, sqlite3_column_type(stmt, i));
+      rb_hash_aset(row, names->names[i], value);
+    }
+  }
+  else {
+    for (int i = 0; i < column_count; i++) {
+      VALUE value = get_column_value(stmt, i, sqlite3_column_type(stmt, i));
+      rb_hash_aset(row, RARRAY_AREF(names->array, i), value);
+    }
+  }
+  return row;
+}
+
+static inline VALUE row_to_array(sqlite3_stmt *stmt, int column_count) {
+  VALUE row = rb_ary_new2(column_count);
+  for (int i = 0; i < column_count; i++) {
+    VALUE value = get_column_value(stmt, i, sqlite3_column_type(stmt, i));
+    rb_ary_push(row, value);
+  }
+  return row;
+}
+
+static inline void row_to_splat_values(sqlite3_stmt *stmt, int column_count, VALUE *values) {
+  for (int i = 0; i < column_count; i++) {
+    values[i] = get_column_value(stmt, i, sqlite3_column_type(stmt, i));
+  }
+}
+
+static inline void lookup_cache_entry(stmt_ctx *ctx) {
+  VALUE cached = rb_hash_aref(ctx->stmt_cache, ctx->sql);
+  *(ctx->stmtptr) = NIL_P(cached) ? NULL : (sqlite3_stmt *)NUM2ULONG(cached);
+  if (*(ctx->stmtptr)) {
+    sqlite3_reset(*(ctx->stmtptr));
+    ctx->flags |= STMT_CTX_F_CACHE_HIT;
+  }
+}
+
+static inline void finalize_stmt_ctx(stmt_ctx *ctx) {
+  if (!*(ctx->stmtptr)) return;
+
+  if (!(ctx->flags & STMT_CTX_F_USE_CACHE)) {
+    sqlite3_finalize(*(ctx->stmtptr));
+    *(ctx->stmtptr) = NULL;
+    return;
+  }
+
+  sqlite3_reset(*(ctx->stmtptr));
+  sqlite3_clear_bindings(*(ctx->stmtptr));
+  if (!(ctx->flags & STMT_CTX_F_CACHE_HIT))
+    rb_hash_aset(ctx->stmt_cache, ctx->sql, ULONG2NUM((uint64_t)*(ctx->stmtptr)));
+}
+
+void make_stmt_ctx(
+  stmt_ctx *ctx, Database_t *db, sqlite3_stmt **stmt, VALUE sql, int argc, VALUE *argv
+) {
+  ctx->stmt_cache = db->stmt_cache;
+  ctx->sql = sql;
+
+  ctx->db = db->sqlite3_db;
+  ctx->stmtptr = stmt;
+
+  int use_cache = (argc > 0) && (db->flags & DB_F_STMT_CACHE);
+  ctx->flags = use_cache ? STMT_CTX_F_USE_CACHE : 0;
+  if (use_cache) lookup_cache_entry(ctx);
+
+  if (!use_cache || !(*(ctx->stmtptr))) {
+    ctx->str = RSTRING_PTR(sql);
+    ctx->len = RSTRING_LEN(sql);
+  }
+
+  ctx->gvl_mode = db->gvl_release_threshold < 0 ? GVL_HOLD : GVL_RELEASE;
+  ctx->rc = 0;
+  ctx->total_changes = 0;
+  ctx->argc = argc;
+  ctx->argv = argv;
+}
+
+static inline int exec_stmt_iterate(sqlite3_stmt *stmt) {
+  while (true) {
+    int rc = sqlite3_step(stmt);
+    switch (rc) {
+      case SQLITE_ROW:  continue;
+      case SQLITE_DONE: return 0;
+      default:          return rc;
+    }
+  }
+}
+
+static inline void finalize_stmt(sqlite3_stmt **stmt) {
+  if (*stmt) {
+    sqlite3_finalize(*stmt);
+    *stmt = NULL;
+  }
+}
+
+static inline void *exec_bind_parameters(void *ptr) {
+  stmt_ctx *ctx = (stmt_ctx *)ptr;
+  bind_all_parameters(*(ctx->stmtptr), ctx->argc, ctx->argv);
+  return NULL;
+}
+
+void *exec_multi_stmt_impl(void *ptr) {
+  stmt_ctx *ctx = (stmt_ctx *)ptr;
+
+  if (ctx->flags & STMT_CTX_F_CACHE_HIT) {
+    rb_thread_call_with_gvl(exec_bind_parameters, ctx);
+    ctx->rc = exec_stmt_iterate(*(ctx->stmtptr));
+    if (ctx->rc == SQLITE_OK)
+      ctx->total_changes += sqlite3_changes(ctx->db);
+    else
+      ctx->total_changes = 0;
+    finalize_stmt_ctx(ctx);
+    return NULL;
+  }
+
+  const char *rest = NULL;
+  const char *str = ctx->str;
+  const char *end = ctx->str + ctx->len;
+  sqlite3_stmt *next_stmt = NULL;
+  ctx->total_changes = 0;
+  while (1) {
+    if (next_stmt) {
+      *(ctx->stmtptr) = next_stmt;
+      next_stmt = NULL;
+      ctx->rc = SQLITE_OK;
+    }
+    else
+      ctx->rc = sqlite3_prepare_v2(ctx->db, str, end - str, ctx->stmtptr, &rest);
+
+    if ((ctx->rc != SQLITE_OK) || !(*(ctx->stmtptr))) goto done;
+    if (ctx->argc) {
+      // parameters were provided - check if str contains multiple statements
+      if (rest != end) {
+        int res = sqlite3_prepare_v2(ctx->db, rest, end-rest, &next_stmt, NULL);
+        if (next_stmt) res = SQLITE_MISUSE;
+        if (res != SQLITE_OK) {
+          ctx->flags &= ~STMT_CTX_F_USE_CACHE;
+          ctx->rc = res;
+          goto done;
+        }
+      }
+      rb_thread_call_with_gvl(exec_bind_parameters, ctx);
+    }
+
+    ctx->rc = exec_stmt_iterate(*(ctx->stmtptr));
+    if (ctx->rc != SQLITE_OK) goto done;
+
+    ctx->total_changes += sqlite3_changes(ctx->db);
+    finalize_stmt_ctx(ctx);
+
+    if (rest == end) return NULL;
+    str = rest;
+  }
+done:
+  finalize_stmt(&next_stmt);
+  finalize_stmt_ctx(ctx);
+  return NULL;
+}
+
+inline int raise_error(stmt_ctx *ctx) {
+  switch (ctx->rc) {
+  case SQLITE_BUSY:
+    rb_raise(cBusyError, "Database is busy");
+  case SQLITE_ERROR:
+    rb_raise(cSQLError, "%s", sqlite3_errmsg(ctx->db));
+  case SQLITE_MISUSE:
+    rb_raise(cError, "Multiple statements cannot take parameters");
+  default:
+    rb_raise(cError, "%s", sqlite3_errmsg(ctx->db));
+  }
+  return 0;
+}
+
+/*
+This function prepares a statement from an SQL string containing one or more SQL
+statements. It will release the GVL while the statements are being prepared and
+executed. All statements excluding the last one are executed. The last statement
+is not executed, but instead handed back to the caller for looping over results.
+
+@return [int] total changes
+*/
+int exec_multi_stmt(stmt_ctx *ctx) {
+  gvl_call(ctx->gvl_mode, exec_multi_stmt_impl, (void *)ctx);
+  if (ctx->rc == SQLITE_OK) return ctx->total_changes;
+
+  // finalize_stmt_ctx already finalized the stmt, or reset it and kept it in
+  // the stmt cache; finalizing here left a dangling pointer in the cache
+  // (patched: use-after-free on the next execute of the same SQL).
+  return raise_error(ctx);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void *prep_single_stmt_impl(void *ptr) {
+  stmt_ctx *ctx = (stmt_ctx *)ptr;
+
+  if (ctx->flags & STMT_CTX_F_CACHE_HIT) return NULL;
+
+  const char *rest = NULL;
+  const char *str = ctx->str;
+  const char *end = ctx->str + ctx->len;
+
+  ctx->rc = sqlite3_prepare_v2(ctx->db, str, end - str, ctx->stmtptr, &rest);
+  if (ctx->rc != SQLITE_OK) {
+    finalize_stmt(ctx->stmtptr);
+    return NULL;
+  }
+  if (rest != end) {
+    sqlite3_stmt *next = NULL;
+    ctx->rc = sqlite3_prepare_v2(ctx->db, rest, end - rest, &next, NULL);
+    if (next) {
+      sqlite3_finalize(next);
+      ctx->rc = SQLITE_MISUSE;
+    }
+    if (ctx->rc != SQLITE_OK) finalize_stmt(ctx->stmtptr);
+  }
+  return NULL;
+}
+
+void prep_single_stmt(stmt_ctx *ctx) {
+  gvl_call(ctx->gvl_mode, prep_single_stmt_impl, (void *)ctx);
+  if (ctx->rc == SQLITE_OK) return;
+
+  if (*(ctx->stmtptr)) sqlite3_finalize(*(ctx->stmtptr));
+
+  raise_error(ctx);
+}
+
+struct step_ctx {
+  sqlite3_stmt *stmt;
+  int rc;
+};
+
+void *stmt_iterate_step(void *ptr) {
+  struct step_ctx *ctx = (struct step_ctx *)ptr;
+  ctx->rc = sqlite3_step(ctx->stmt);
+  return NULL;
+}
+
+inline enum gvl_mode stepwise_gvl_mode(query_ctx *ctx) {
+  // a negative or zero threshold means the GVL is always held during iteration.
+  if (ctx->gvl_release_threshold <= 0) return GVL_HOLD;
+
+  if (!sqlite3_stmt_busy(ctx->stmt)) return GVL_RELEASE;
+
+  // if positive, the GVL is normally held, and release every <threshold> steps.
+  return (ctx->step_count % ctx->gvl_release_threshold) ? GVL_HOLD : GVL_RELEASE;
+}
+
+inline int stmt_iterate(query_ctx *ctx) {
+  struct step_ctx step_ctx = {ctx->stmt, 0};
+  ctx->step_count += 1;
+  gvl_call(stepwise_gvl_mode(ctx), stmt_iterate_step, (void *)&step_ctx);
+  switch (step_ctx.rc) {
+    case SQLITE_ROW:
+      return 1;
+    case SQLITE_DONE:
+      ctx->eof = 1;
+      return 0;
+    case SQLITE_BUSY:
+      rb_raise(cBusyError, "Database is busy");
+    case SQLITE_INTERRUPT:
+      rb_raise(cInterruptError, "Query was interrupted");
+    case SQLITE_ERROR:
+      rb_raise(cSQLError, "%s", sqlite3_errmsg(ctx->sqlite3_db));
+    default:
+      rb_raise(cError, "%s", sqlite3_errmsg(ctx->sqlite3_db));
+  }
+
+  return 0;
+}
+
+VALUE cleanup_stmt(query_ctx *ctx) {
+  if (!ctx->stmt) goto done;
+
+  if (!(ctx->flags & STMT_CTX_F_USE_CACHE))
+    sqlite3_finalize(ctx->stmt);
+  else {
+    sqlite3_reset(ctx->stmt);
+    sqlite3_clear_bindings(ctx->stmt);
+    if (!(ctx->flags & STMT_CTX_F_CACHE_HIT))
+      rb_hash_aset(ctx->db->stmt_cache, ctx->sql, ULONG2NUM((uint64_t)(ctx->stmt)));
+  }
+done:
+  return Qnil;
+}
+
+static inline void add_transform_container_obj(VALUE row, struct transform_node *col, VALUE obj) {
+  if (col->flags & TRANSFORM_F_ARRAY) {
+    VALUE array = rb_hash_aref(row, col->name);
+    if (NIL_P(array)) {
+      array = rb_ary_new();
+      rb_hash_aset(row, col->name, array);
+      RB_GC_GUARD(array);
+    }
+    rb_ary_push(array, obj);
+  }
+  else
+    rb_hash_aset(row, col->name, obj);
+}
+
+static VALUE run_transform(VALUE identity_storage, struct transform_node *node, sqlite3_stmt *stmt);
+
+static inline VALUE json_parse(VALUE json) {
+  if (NIL_P(mJSON)) {
+    rb_require("json");
+    mJSON = rb_const_get(rb_cObject, rb_intern_const("JSON"));
+  }
+  return rb_funcall(mJSON, ID_parse, 1, json);
+}
+
+static inline VALUE get_transform_column_value(struct transform_node *col, sqlite3_stmt *stmt) {
+  int native_type = sqlite3_column_type(stmt, col->idx);
+  switch (col->type) {
+    case TRANSFORM_T_AUTO:
+      if (native_type == SQLITE_NULL) return Qnil;
+      return get_column_value(stmt, col->idx, native_type);
+    case TRANSFORM_T_INTEGER:
+      if (native_type == SQLITE_NULL) return Qnil;
+      return get_column_value(stmt, col->idx, SQLITE_INTEGER);
+    case TRANSFORM_T_FLOAT:
+      if (native_type == SQLITE_NULL) return Qnil;
+      return get_column_value(stmt, col->idx, SQLITE_FLOAT);
+    case TRANSFORM_T_TEXT:
+      if (native_type == SQLITE_NULL) return Qnil;
+      return get_column_value(stmt, col->idx, SQLITE_TEXT);
+    case TRANSFORM_T_BOOL:
+      if (native_type == SQLITE_NULL) return Qnil;
+      int64_t v = sqlite3_column_int64(stmt, col->idx);
+      return v ? Qtrue : Qfalse;
+    case TRANSFORM_T_JSON:
+      if (native_type == SQLITE_NULL) return Qnil;
+      VALUE json = get_column_value(stmt, col->idx, SQLITE_TEXT);
+      return json_parse(json);
+      RB_GC_GUARD(json);
+    case TRANSFORM_T_PROC:
+      VALUE val = get_column_value(stmt, col->idx, native_type);
+      return rb_funcall(col->conversion_proc, ID_call, 1, val);
+      RB_GC_GUARD(val);
+    default:
+      rb_raise(cError, "Invalid column value");
+  }
+}
+
+VALUE run_transform_with_identity(
+  VALUE identity_storage, struct transform_node *node, sqlite3_stmt *stmt
+) {
+  VALUE row = Qnil;
+  VALUE identity_map = Qnil;
+
+  VALUE identity_value = get_transform_column_value(node->identity_node, stmt);
+  //   get_column_value(
+  //   stmt, node->identity_idx, sqlite3_column_type(stmt, node->identity_idx)
+  // );
+  VALUE identity_map_key = ULONG2NUM((uint64_t)node);
+  identity_map = rb_hash_aref(identity_storage, identity_map_key);
+
+  if (NIL_P(identity_map)) {
+    identity_map = rb_hash_new();
+    rb_hash_aset(identity_storage, identity_map_key, identity_map);
+  }
+  row = rb_hash_aref(identity_map, identity_value);
+  if (!NIL_P(row)) {
+    struct transform_node *col = node->subnodes_head;
+    while (col) {
+      if (col->type == TRANSFORM_T_RELATION) {
+        VALUE obj = run_transform(identity_storage, col, stmt);
+        if (!NIL_P(obj)) add_transform_container_obj(row, col, obj);
+      }
+      col = col->next;
+    }
+    return (node->flags & TRANSFORM_F_NAME) ? row : Qnil;
+  }
+  else {
+    // not found in identity map
+    row = rb_hash_new();
+    struct transform_node *col = node->subnodes_head;
+    while (col) {
+      if (col == node->identity_node) {
+        rb_hash_aset(row, col->name, identity_value);
+        rb_hash_aset(identity_map, identity_value, row);
+      }
+      else if (col->type == TRANSFORM_T_RELATION) {
+        VALUE obj = run_transform(identity_storage, col, stmt);
+        if (!NIL_P(obj)) add_transform_container_obj(row, col, obj);
+      }
+      else {
+        VALUE value = get_transform_column_value(col, stmt);
+        rb_hash_aset(row, col->name, value);
+        RB_GC_GUARD(value);
+      }
+      col = col->next;
+    }
+    return row;
+  }
+
+  RB_GC_GUARD(identity_map);
+  RB_GC_GUARD(row);
+}
+
+VALUE run_transform_no_identity(
+  VALUE identity_storage, struct transform_node *node, sqlite3_stmt *stmt
+) {
+  VALUE row = rb_hash_new();
+  struct transform_node *col = node->subnodes_head;
+  while (col) {
+    if (col->type == TRANSFORM_T_RELATION) {
+      VALUE obj = run_transform(identity_storage, col, stmt);
+      if (!NIL_P(obj)) add_transform_container_obj(row, col, obj);
+    }
+    else {
+      VALUE value = get_transform_column_value(col, stmt);
+      rb_hash_aset(row, col->name, value);
+      RB_GC_GUARD(value);
+    }
+    col = col->next;
+  }
+  return row;
+  RB_GC_GUARD(row);
+}
+
+static inline VALUE run_transform(
+  VALUE identity_storage, struct transform_node *node, sqlite3_stmt *stmt
+) {
+  if (node->identity_node) {
+    return run_transform_with_identity(identity_storage, node, stmt);
+  }
+  else {
+    return run_transform_no_identity(identity_storage, node, stmt);
+  }
+}
+
+VALUE safe_query_transform(query_ctx *ctx) {
+  VALUE array = rb_ary_new();
+  VALUE identity_storage = rb_hash_new();
+  VALUE row = Qnil;
+  // int column_count = sqlite3_column_count(ctx->stmtptr);
+  struct transform_node *transform_root = get_transform_root(ctx->transform);
+
+  int row_count = 0;
+  while (stmt_iterate(ctx)) {
+    row_count++;
+    row = run_transform(identity_storage, transform_root, ctx->stmt);
+    if (!NIL_P(row)) {
+      rb_ary_push(array, row);
+      if (ctx->max_rows != ALL_ROWS && row_count >= ctx->max_rows)
+        goto done;
+    }
+  }
+
+done:
+  switch (ctx->row_mode) {
+    case ROW_YIELD:
+      rb_ary_each(array);
+      return ctx->self;
+    case ROW_MULTI:
+      return array;
+    case ROW_SINGLE:
+      return rb_ary_entry(array, 0);
+  }
+
+  RB_GC_GUARD(identity_storage);
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(array);
+  return Qnil;
+}
+
+VALUE safe_query_single_row_transform(query_ctx *ctx) {
+  VALUE array = rb_ary_new();
+  VALUE identity_storage = rb_hash_new();
+  VALUE row = Qnil;
+  // int column_count = sqlite3_column_count(ctx->stmtptr);
+  struct transform_node *transform_root = get_transform_root(ctx->transform);
+
+  int row_count = 0;
+  while (stmt_iterate(ctx)) {
+    row_count++;
+    row = run_transform(identity_storage, transform_root, ctx->stmt);
+    if (!NIL_P(row)) { rb_ary_push(array, row); }
+  }
+
+  row = rb_ary_entry(array, 0);
+  switch (ctx->row_mode) {
+    case ROW_YIELD:
+      rb_yield(row);
+      return ctx->self;
+    case ROW_MULTI:
+    case ROW_SINGLE:
+      return row;
+  }
+
+  RB_GC_GUARD(identity_storage);
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(array);
+  return Qnil;
+}
+
+VALUE safe_query_splat(query_ctx *ctx);
+
+VALUE safe_query_hash(query_ctx *ctx) {
+  VALUE array = ROW_MULTI_P(ctx->row_mode) ? rb_ary_new() : Qnil;
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  struct column_names names = get_column_names(ctx->stmt, column_count);
+  int row_count = 0;
+  int do_transform = !NIL_P(ctx->transform);
+
+  while (stmt_iterate(ctx)) {
+    row = row_to_hash(ctx->stmt, column_count, &names);
+    if (do_transform)
+      row = INVOKE_PROC(ctx->transform, 1, &row);
+    row_count++;
+    switch (ctx->row_mode) {
+      case ROW_YIELD:
+        rb_yield(row);
+        break;
+      case ROW_MULTI:
+        rb_ary_push(array, row);
+        break;
+      case ROW_SINGLE:
+        return row;
+    }
+    if (ctx->max_rows != ALL_ROWS && row_count >= ctx->max_rows)
+      return ROW_MULTI_P(ctx->row_mode) ? array : ctx->self;
+  }
+
+  RB_GC_GUARD(names.array);
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(array);
+  return ROW_MULTI_P(ctx->row_mode) ? array : Qnil;
+}
+
+#define MAX_ARGV_COLUMNS 8
+#define NIL_ARGV_VALUES {Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil}
+#define ARGV_GC_GUARD(values) \
+  RB_GC_GUARD(values[0]); \
+  RB_GC_GUARD(values[1]); \
+  RB_GC_GUARD(values[2]); \
+  RB_GC_GUARD(values[3]); \
+  RB_GC_GUARD(values[4]); \
+  RB_GC_GUARD(values[5]); \
+  RB_GC_GUARD(values[6]); \
+  RB_GC_GUARD(values[7])
+
+#define ARGV_GET_ROW(ctx, column_count, argv_values, row, do_transform, return_rows) \
+  row_to_splat_values(ctx->stmt, column_count, argv_values); \
+  if (do_transform) \
+    row = INVOKE_PROC(ctx->transform, column_count, argv_values); \
+  else if (return_rows) \
+    row = column_count == 1 ? argv_values[0] : rb_ary_new_from_values(column_count, argv_values);
+
+VALUE safe_query_splat(query_ctx *ctx) {
+  VALUE array = ROW_MULTI_P(ctx->row_mode) ? rb_ary_new() : Qnil;
+  VALUE argv_values[MAX_ARGV_COLUMNS] = NIL_ARGV_VALUES;
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  if (column_count > MAX_ARGV_COLUMNS)
+    rb_raise(cError, "Conversion is supported only up to %d columns", MAX_ARGV_COLUMNS);
+
+  int do_transform = !NIL_P(ctx->transform);
+  int return_rows = (ctx->row_mode != ROW_YIELD);
+
+  int row_count = 0;
+  while (stmt_iterate(ctx)) {
+    row_count++;
+    ARGV_GET_ROW(ctx, column_count, argv_values, row, do_transform, return_rows);
+    switch (ctx->row_mode) {
+      case ROW_YIELD:
+        if (do_transform)
+          rb_yield(row);
+        else
+          rb_yield_values2(column_count, argv_values);
+        break;
+      case ROW_MULTI:
+        rb_ary_push(array, row);
+        break;
+      case ROW_SINGLE:
+        return row;
+    }
+    if (ctx->max_rows != ALL_ROWS && row_count >= ctx->max_rows)
+      return ROW_MULTI_P(ctx->row_mode) ? array : ctx->self;
+  }
+
+  ARGV_GC_GUARD(argv_values);
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(array);
+  return ROW_MULTI_P(ctx->row_mode) ? array : Qnil;
+}
+
+VALUE safe_query_array(query_ctx *ctx) {
+  VALUE array = ROW_MULTI_P(ctx->row_mode) ? rb_ary_new() : Qnil;
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  int row_count = 0;
+  int do_transform = !NIL_P(ctx->transform);
+
+  while (stmt_iterate(ctx)) {
+    row = row_to_array(ctx->stmt, column_count);
+    if (do_transform)
+      row = INVOKE_PROC(ctx->transform, 1, &row);
+    row_count++;
+    switch (ctx->row_mode) {
+      case ROW_YIELD:
+        rb_yield(row);
+        break;
+      case ROW_MULTI:
+        rb_ary_push(array, row);
+        break;
+      case ROW_SINGLE:
+        return row;
+    }
+    if (ctx->max_rows != ALL_ROWS && row_count >= ctx->max_rows)
+      return ROW_MULTI_P(ctx->row_mode) ? array : ctx->self;
+  }
+
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(array);
+  return ROW_MULTI_P(ctx->row_mode) ? array : Qnil;
+}
+
+VALUE safe_query_single_row_hash(query_ctx *ctx) {
+  int column_count = sqlite3_column_count(ctx->stmt);
+  VALUE row = Qnil;
+  struct column_names names = get_column_names(ctx->stmt, column_count);
+
+  if (stmt_iterate(ctx)) {
+    row = row_to_hash(ctx->stmt, column_count, &names);
+    if (!NIL_P(ctx->transform))
+      row = INVOKE_PROC(ctx->transform, 1, &row);
+  }
+
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(names.array);
+  return row;
+}
+
+VALUE safe_query_single_row_splat(query_ctx *ctx) {
+  VALUE argv_values[MAX_ARGV_COLUMNS] = NIL_ARGV_VALUES;
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  if (column_count > MAX_ARGV_COLUMNS)
+    rb_raise(cError, "Conversion is supported only up to %d columns", MAX_ARGV_COLUMNS);
+  int do_transform = !NIL_P(ctx->transform);
+
+  if (stmt_iterate(ctx)) {
+    ARGV_GET_ROW(ctx, column_count, argv_values, row, do_transform, 1);
+  }
+
+  ARGV_GC_GUARD(argv_values);
+  RB_GC_GUARD(row);
+  return row;
+}
+
+VALUE safe_query_single_row_array(query_ctx *ctx) {
+  int column_count = sqlite3_column_count(ctx->stmt);
+  VALUE row = Qnil;
+  int do_transform = !NIL_P(ctx->transform);
+
+  if (stmt_iterate(ctx)) {
+    row = row_to_array(ctx->stmt, column_count);
+    if (do_transform)
+      row = INVOKE_PROC(ctx->transform, 1, &row);
+  }
+
+  RB_GC_GUARD(row);
+  return row;
+}
+
+enum batch_mode {
+  BATCH_EXECUTE,
+  BATCH_QUERY_HASH,
+  BATCH_QUERY_SPLAT,
+  BATCH_QUERY_ARRAY,
+};
+
+static inline VALUE batch_iterate_hash(query_ctx *ctx) {
+  VALUE rows = rb_ary_new();
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  struct column_names names = get_column_names(ctx->stmt, column_count);
+  const int do_transform = !NIL_P(ctx->transform);
+
+  while (stmt_iterate(ctx)) {
+    row = row_to_hash(ctx->stmt, column_count, &names);
+    if (do_transform)
+      row = INVOKE_PROC(ctx->transform, 1, &row);
+    rb_ary_push(rows, row);
+  }
+
+  RB_GC_GUARD(names.array);
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(rows);
+  return rows;
+}
+
+static inline VALUE batch_iterate_array(query_ctx *ctx) {
+  VALUE rows = rb_ary_new();
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  int do_transform = !NIL_P(ctx->transform);
+
+  while (stmt_iterate(ctx)) {
+    row = row_to_array(ctx->stmt, column_count);
+    if (do_transform)
+      row = INVOKE_PROC(ctx->transform, 1, &row);
+    rb_ary_push(rows, row);
+  }
+
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(rows);
+  return rows;
+}
+
+static inline VALUE batch_iterate_splat(query_ctx *ctx) {
+  VALUE rows = rb_ary_new();
+  VALUE argv_values[MAX_ARGV_COLUMNS] = NIL_ARGV_VALUES;
+  VALUE row = Qnil;
+  int column_count = sqlite3_column_count(ctx->stmt);
+  if (column_count > MAX_ARGV_COLUMNS)
+    rb_raise(cError, "Conversion is supported only up to %d columns", MAX_ARGV_COLUMNS);
+  int do_transform = !NIL_P(ctx->transform);
+
+  while (stmt_iterate(ctx)) {
+    ARGV_GET_ROW(ctx, column_count, argv_values, row, do_transform, 1);
+    rb_ary_push(rows, row);
+  }
+
+  ARGV_GC_GUARD(argv_values);
+  RB_GC_GUARD(row);
+  RB_GC_GUARD(rows);
+  return rows;
+}
+
+static inline void batch_iterate(query_ctx *ctx, enum batch_mode mode, VALUE *rows) {
+  switch (mode) {
+    case BATCH_EXECUTE:
+      while (stmt_iterate(ctx));
+      break;
+    case BATCH_QUERY_HASH:
+      *rows = batch_iterate_hash(ctx);
+      break;
+    case BATCH_QUERY_SPLAT:
+      *rows = batch_iterate_splat(ctx);
+      break;
+    case BATCH_QUERY_ARRAY:
+      *rows = batch_iterate_array(ctx);
+      break;
+  }
+}
+
+static inline void invoke_pre_query_hook(query_ctx *ctx, VALUE params) {
+  int argc = 1;
+  switch (TYPE(params)) {
+    case T_ARRAY:
+      argc = -1;
+      break;
+    case T_NIL:
+      argc = 0;
+  }
+
+  Database_pre_query_hook(ctx->db, ctx->stmt, ctx->sql, argc, &params);
+}
+
+static inline VALUE batch_run_array(query_ctx *ctx, enum batch_mode batch_mode) {
+  int count = RARRAY_LEN(ctx->params);
+  int block_given = rb_block_given_p();
+  VALUE results = (batch_mode != BATCH_EXECUTE) && !block_given ? rb_ary_new() : Qnil;
+  VALUE rows = Qnil;
+  int changes = 0;
+
+  for (int i = 0; i < count; i++) {
+    sqlite3_reset(ctx->stmt);
+    sqlite3_clear_bindings(ctx->stmt);
+    VALUE params = RARRAY_AREF(ctx->params, i);
+    bind_all_parameters_from_object(ctx->stmt, params);
+    invoke_pre_query_hook(ctx, params);
+
+    batch_iterate(ctx, batch_mode, &rows);
+    changes += sqlite3_changes(ctx->sqlite3_db);
+
+    if (batch_mode != BATCH_EXECUTE) {
+      if (block_given)
+        rb_yield(rows);
+      else
+        rb_ary_push(results, rows);
+    }
+  }
+
+  RB_GC_GUARD(rows);
+  RB_GC_GUARD(results);
+
+  if (batch_mode == BATCH_EXECUTE || block_given)
+    return INT2FIX(changes);
+  else
+    return results;
+}
+
+struct batch_execute_each_ctx {
+  query_ctx *ctx;
+  enum batch_mode batch_mode;
+  int block_given;
+  VALUE results;
+  int changes;
+};
+
+static VALUE batch_run_each_iter(RB_BLOCK_CALL_FUNC_ARGLIST(yield_value, vctx)) {
+  struct batch_execute_each_ctx *each_ctx = (struct batch_execute_each_ctx*)vctx;
+  VALUE rows = Qnil;
+
+  sqlite3_reset(each_ctx->ctx->stmt);
+  sqlite3_clear_bindings(each_ctx->ctx->stmt);
+  bind_all_parameters_from_object(each_ctx->ctx->stmt, yield_value);
+  invoke_pre_query_hook(each_ctx->ctx, yield_value);
+
+  batch_iterate(each_ctx->ctx, each_ctx->batch_mode, &rows);
+  each_ctx->changes += sqlite3_changes(each_ctx->ctx->sqlite3_db);
+
+  if (each_ctx->batch_mode != BATCH_EXECUTE) {
+    if (each_ctx->block_given)
+      rb_yield(rows);
+    else
+      rb_ary_push(each_ctx->results, rows);
+  }
+  RB_GC_GUARD(rows);
+
+  return Qnil;
+}
+
+static inline VALUE batch_run_each(query_ctx *ctx, enum batch_mode batch_mode) {
+  struct batch_execute_each_ctx each_ctx = {
+    .ctx          = ctx,
+    .batch_mode   = batch_mode,
+    .block_given  = rb_block_given_p(),
+    .results      = ((batch_mode != BATCH_EXECUTE) && !rb_block_given_p() ? rb_ary_new() : Qnil),
+    .changes      = 0
+  };
+  rb_block_call(ctx->params, ID_each, 0, 0, batch_run_each_iter, (VALUE)&each_ctx);
+
+  if (batch_mode == BATCH_EXECUTE || each_ctx.block_given)
+    return INT2FIX(each_ctx.changes);
+  else
+    return each_ctx.results;
+}
+
+static inline VALUE batch_run_proc(query_ctx *ctx, enum batch_mode batch_mode) {
+  VALUE params = Qnil;
+  int block_given = rb_block_given_p();
+  VALUE results = (batch_mode != BATCH_EXECUTE) && !block_given ? rb_ary_new() : Qnil;
+  VALUE rows = Qnil;
+  int changes = 0;
+
+  while (1) {
+    params = INVOKE_PROC(ctx->params, 0, NULL);
+    if (NIL_P(params)) break;
+
+    sqlite3_reset(ctx->stmt);
+    sqlite3_clear_bindings(ctx->stmt);
+    bind_all_parameters_from_object(ctx->stmt, params);
+    invoke_pre_query_hook(ctx, params);
+
+    batch_iterate(ctx, batch_mode, &rows);
+    changes += sqlite3_changes(ctx->sqlite3_db);
+
+    if (batch_mode != BATCH_EXECUTE) {
+      if (block_given)
+        rb_yield(rows);
+      else
+        rb_ary_push(results, rows);
+    }
+  }
+
+  RB_GC_GUARD(rows);
+  RB_GC_GUARD(results);
+  RB_GC_GUARD(params);
+
+  if (batch_mode == BATCH_EXECUTE || block_given)
+    return INT2FIX(changes);
+  else
+    return results;
+}
+
+static inline VALUE batch_run(query_ctx *ctx, enum batch_mode batch_mode) {
+  if (TYPE(ctx->params) == T_ARRAY)
+    return batch_run_array(ctx, batch_mode);
+
+  if (rb_respond_to(ctx->params, ID_each))
+    return batch_run_each(ctx, batch_mode);
+
+  if (rb_respond_to(ctx->params, ID_call))
+    return batch_run_proc(ctx, batch_mode);
+
+  rb_raise(cParameterError, "Invalid parameter source supplied to #batch_execute");
+}
+
+VALUE safe_batch_execute(query_ctx *ctx) {
+  return batch_run(ctx, BATCH_EXECUTE);
+}
+
+VALUE safe_batch_query(query_ctx *ctx) {
+  switch (ctx->query_mode) {
+    case QUERY_HASH:
+      return batch_run(ctx, BATCH_QUERY_HASH);
+    case QUERY_SPLAT:
+      return batch_run(ctx, BATCH_QUERY_SPLAT);
+    case QUERY_ARRAY:
+      return batch_run(ctx, BATCH_QUERY_ARRAY);
+    default:
+      rb_raise(cError, "Invalid query mode (safe_batch_query)");
+  }
+}
+
+VALUE safe_batch_query_array(query_ctx *ctx) {
+  return batch_run(ctx, BATCH_QUERY_ARRAY);
+}
+
+VALUE safe_batch_query_splat(query_ctx *ctx) {
+  return batch_run(ctx, BATCH_QUERY_SPLAT);
+}
+
+VALUE safe_query_columns(query_ctx *ctx) {
+  return get_column_names_array(ctx->stmt, sqlite3_column_count(ctx->stmt));
+}
+
+VALUE safe_query_changes(query_ctx *ctx) {
+  while (stmt_iterate(ctx));
+  return INT2FIX(sqlite3_changes(ctx->sqlite3_db));
+}
+
+VALUE safe_total_changes(query_ctx *ctx) {
+  return INT2FIX(ctx->total_changes);
+}

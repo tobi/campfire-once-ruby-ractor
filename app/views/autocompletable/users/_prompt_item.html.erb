@@ -1,0 +1,12 @@
+<%# locals: (user:) %>
+<lexxy-prompt-item search="<%= user.name %>" sgid="<%== user_attachable_sgid(user.id) %>">
+  <template type="menu">
+    <span class="autocomplete__item flex align-center gap unpad">
+      <%= avatar_tag(user.id, user.name, user.bio, user.updated_at) %>
+      <span class="autocompletable__name"><%= user.name %></span>
+    </span>
+  </template>
+  <template type="editor">
+    <%= _users_mention(user: user) %>
+  </template>
+</lexxy-prompt-item>

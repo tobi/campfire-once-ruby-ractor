@@ -1,0 +1,17 @@
+<%# locals: (room:) %>
+  <%= account_logo_tag if account.logo_attached?(@db) %>
+
+  <span class="btn btn--reversed btn--faux room--current">
+    <h1 class="room__contents txt-medium overflow-ellipsis">
+      <% if room.direct? %>
+        <span class="for-screen-reader">Ping with</span>
+      <% end %>
+
+      <%= current_room_display_name(room) %>
+    </h1>
+</span>
+  <a class="btn" style="view-transition-name: edit-room-<%== room.id_s %>" data-room-id="<%== room.id_s %>" href="<%== edit_room_path(room) %>">
+    <img aria-hidden="true" src="<%== asset_path("menu-dots-horizontal.svg") %>" width="20" height="20" />
+    <span class="for-screen-reader">Settings for this <%== room.direct? ? "Ping" : "room" %></span>
+</a>
+  <%= _rooms_involvements_bell(room: room) %>

@@ -1,0 +1,88 @@
+<% action = "/users/me/profile" %>
+<% avatar_input = %(<input id="file" class="input" accept="image/*" data-upload-preview-target="input" data-action="upload-preview#previewImage change-&gt;form#submit" type="file" name="user[avatar]" />) %>
+
+
+<section class="panel flex flex-column gap" style="view-transition-name: avatar-<%= @user.id %>">
+  <%= _pwa_install_instructions %>
+
+  <div class="align-center center avatar__form gap" data-controller="upload-preview">
+    <form class="txt-medium" data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+      <label class="btn input--file">
+        <img aria-hidden="true" src="<%== asset_path("camera.svg") %>" width="20" height="20" />
+        <%== avatar_input %>
+        <span class="for-screen-reader">Upload avatar</span>
+      </label>
+</form>
+    <form data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+      <label class="btn avatar input--file txt-xx-large">
+        <img aria-hidden="true" data-upload-preview-target="image" src="<%= fresh_user_avatar_path(@user.id, @user.updated_at) %>" width="300" height="300" />
+        <%== avatar_input %>
+        <span class="for-screen-reader">Avatar</span>
+      </label>
+</form>
+<% if @avatar_attached %>
+<% avatar_path = "/users/#{@user.id}/avatar" %>
+      <form class="button_to" method="post" action="<%= avatar_path %>"><input type="hidden" name="_method" value="delete" /><button class="btn btn--negative txt-small avatar__delete-btn" type="submit">
+        <img aria-hidden="true" src="<%== asset_path("minus.svg") %>" width="20" height="20" />
+        <span class="for-screen-reader">Delete avatar</span>
+</button><%= form_token(avatar_path, "delete") %></form><%= nil -%>
+<% end %>
+  </div>
+
+  <form data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+    <div class="flex flex-column gap">
+      <div class="flex align-center gap">
+        <%= translation_button(:user_name) %>
+
+        <label class="flex align-center gap flex-item-grow input input--actor">
+          <input class="input txt-large " autocomplete="name" placeholder="Enter your name" autofocus="autofocus" required="required" data-1p-ignore="true" type="text"<% unless @user.name.nil? %> value="<%= @user.name %>"<% end %> name="user[name]" id="user_name" />
+          <img aria-hidden="true" class="colorize--black" src="<%== asset_path("person.svg") %>" width="24" height="24" />
+        </label>
+      </div>
+
+      <div class="flex align-center gap">
+        <%= translation_button(:email_address) %>
+
+        <label class="flex align-center gap flex-item-grow input input--actor">
+          <input class="input txt-large"<% unless @user.email_address.nil? %> value="<%= @user.email_address %>"<% end %> autocomplete="username" placeholder="Enter your email address" type="email" name="user[email_address]" id="user_email_address" />
+          <img aria-hidden="true" class="colorize--black" src="<%== asset_path("email.svg") %>" width="24" height="24" />
+        </label>
+      </div>
+
+      <div class="flex align-center gap">
+        <%= translation_button(:update_password) %>
+
+        <label class="flex align-center gap flex-item-grow input input--actor">
+          <input class="input txt-large" autocomplete="new-password" placeholder="Change password" maxlength="72" size="72" type="password" name="user[password]" id="user_password" />
+          <img aria-hidden="true" class="colorize--black" src="<%== asset_path("password.svg") %>" width="24" height="24" />
+        </label>
+      </div>
+
+      <div class="flex align-start gap">
+        <%= translation_button(:bio) %>
+
+        <label class="flex align--center gap flex-item--grow input input--actor">
+          <textarea class="input txt-large" placeholder="A few words about yourself…" maxlength="200" rows="3" name="user[bio]" id="user_bio">
+<%= @user.bio %></textarea>
+          <img aria-hidden="true" class="colorize--black" src="<%== asset_path("bio.svg") %>" width="24" height="24" />
+        </label>
+      </div>
+
+      <button class="btn btn--reversed center txt-large" type="submit"><img aria-hidden="true" src="<%== asset_path("check.svg") %>" width="20" height="20" /><span class="for-screen-reader">Save changes</span></button>
+    </div>
+</form>
+  <div class="margin-block pad-inline pad-block fill-shade border-radius">
+    <menu class="flex flex-column gap margin-none pad">
+      <%= (@shared_memberships.each { |room, inv| _users_profiles_membership(room: room, involvement: inv) }; nil) %>
+
+<% if @direct_memberships.any? && @shared_memberships.any? %>
+        <hr class="separator full-width" style="--border-style: solid">
+<% end %>
+
+      <%= (@direct_memberships.each { |room, inv| _users_profiles_membership(room: room, involvement: inv) }; nil) %>
+    </menu>
+  </div>
+
+  <%= _users_profiles_transfer(user: @user) %>
+
+</section>

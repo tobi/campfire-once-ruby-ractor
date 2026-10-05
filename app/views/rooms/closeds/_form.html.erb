@@ -1,0 +1,37 @@
+<%# locals: (room:, selected_users:, unselected_users:, type_change_path:, admin:, transition:) %>
+<%= _rooms_layouts_form_open(room: room, action: room.id ? "/rooms/closeds/#{room.id}" : "/rooms/closeds", admin: admin, transition: transition) -%>
+<% if admin %>
+      <li class="flex align-center gap margin-none">
+        <figure class="avatar flex-item-no-shrink" style="--avatar-border-radius: 0; --avatar-size: 4ch;">
+          <img aria-hidden="true" class="colorize--black" style="background-color: transparent" src="<%== asset_path("everyone.svg") %>" />
+          <span class="for-screen-reader">Everyone</span>
+        </figure>
+
+        <div class="min-width">
+          <div class="overflow-ellipsis fill-shade"><strong>Everyone</strong></div>
+        </div>
+
+        <hr class="separator" aria-hidden="true">
+
+        <a class="btn--faux flex-inline" tabindex="-1" data-turbo-action="replace" href="<%= type_change_path %>">
+          <label for="room_type" class="switch">
+            <input type="checkbox" id="room_type" class="switch__input">
+            <span class="switch__btn round"></span>
+            <span class="for-screen-reader">Give everyone access to this room</span>
+          </label>
+</a>      </li>
+
+      <hr class="separator full-width" style="--border-style: solid">
+<% end %>
+
+    <% if selected_users.size + unselected_users.size > 20 %><%= _rooms_layouts_search %><% end %>
+
+    <div data-filter-target="list" contents>
+      <%= (selected_users.each { |u| _rooms_closeds_user(user: u, admin: admin, selected: true, new_record: room.id.nil?) }; nil) %>
+
+<% if selected_users.any? && unselected_users.any? %>
+        <hr class="separator full-width" style="--border-style: solid">
+<% end %>
+
+      <%= (unselected_users.each { |u| _rooms_closeds_user(user: u, admin: admin, selected: false, new_record: room.id.nil?) }; nil) %>
+<%= _rooms_layouts_form_close(room: room, admin: admin) -%>

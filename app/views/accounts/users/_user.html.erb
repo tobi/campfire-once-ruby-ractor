@@ -1,0 +1,37 @@
+<%# locals: (user:, admin_view:) %>
+<% self_row = user.id == current_user.id %>
+<li class="flex align-center gap margin-none <%== "banned" if user.banned? %>">
+  <figure class="avatar flex-item-no-shrink" style="--avatar-size: 3.75ch;">
+    <%= lazy_avatar_tag(user) %>
+  </figure>
+
+  <div class="min-width">
+    <div class="overflow-ellipsis fill-shade"><strong><%= user.name %></strong></div>
+  </div>
+
+  <hr class="separator" aria-hidden="true">
+
+<% if admin_view && user.active? %>
+<% unless user.bot? %>
+      <form data-controller="form" action="/account/users/<%= user.id %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token("/account/users/#{user.id}", "patch") %>
+        <label class="btn txt-small flex-item-no-shrink" for="role_user_<%= user.id %>">
+          <span class="for-screen-reader">Role: <%= user.administrator? ? "Administrator" : "Member" %></span>
+          <img aria-hidden="true" src="<%== asset_path("crown.svg") %>" width="20" height="20" />
+          <input name="user[role]"<%== ' disabled="disabled"' if self_row %> type="hidden" value="member" /><input data-action="form#submit" hidden="hidden" id="role_user_<%= user.id %>"<%== ' disabled="disabled"' if self_row %> type="checkbox" value="administrator"<%== ' checked="checked"' if user.administrator? %> name="user[role]" />
+        </label>
+</form>
+<% end %>
+<% unless self_row %>
+      <form class="button_to" method="post" action="/account/users/<%= user.id %>"><input type="hidden" name="_method" value="delete" /><button class="btn txt-small flex-item-no-shrink btn--negative" data-turbo-confirm="Are you sure you want to permanently remove this person from the account? This can’t be undone." type="submit">
+        <img aria-hidden="true" src="<%== asset_path("minus.svg") %>" width="20" height="20" />
+        <span class="for-screen-reader">Delete <%= user.name %></span>
+</button><%= form_token("/account/users/#{user.id}", "delete") %></form><%= nil -%>
+<% end %>
+<% end %>
+<% if self_row %>
+    <a class="btn txt-small flex-item-no-shrink" target="_top" href="/users/me/profile">
+      <img aria-hidden="true" src="<%== asset_path("pencil.svg") %>" width="20" height="20" />
+      <span class="for-screen-reader">My settings</span>
+</a><%= nil -%>
+<% end %>
+</li>

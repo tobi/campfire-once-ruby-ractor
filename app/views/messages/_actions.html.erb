@@ -1,0 +1,45 @@
+<%# locals: (message:) %>
+
+<div class="message__actions" data-controller="soft-keyboard">
+  <details class="position-relative" data-controller="popup" data-action="keydown.esc-&gt;popup#close toggle-&gt;popup#toggle click@document-&gt;popup#closeOnClickOutside" data-popup-orientation-top-class="popup-orientation-top">
+    <summary class="btn message__action-btn message__options-btn">
+      <img class="colorize--black" aria-hidden="true" src="<%== asset_path("menu-dots-horizontal.svg") %>" width="20" height="20" />
+      <span class="for-screen-reader">Message options</span>
+    </summary>
+
+    <div class="message__actions-menu border shadow" data-popup-target="menu">
+      <div class="quick-boosts">
+        <% boosts_path = "/messages/#{message.id}/boosts"; token = form_authenticity_token(boosts_path, "post") %>
+        <% Campfire::Helpers::REACTIONS.each do |character, title| %>
+          <form data-turbo-frame="boosting_message_<%= message.client_message_id %>" data-action="popup#close" action="<%== boosts_path %>" accept-charset="UTF-8" method="post"><% if token %><input type="hidden" name="authenticity_token" value="<%== token %>" /><% end %>
+            <input type="hidden" name="boost[content]" id="boost_content" value="<%== character %>" />
+            <button name="button" type="submit" title="<%== title %>" class="btn message__action-btn" data-emoji="<%== character %>">
+              <figure class="margin-none boost-character"><%== character %></figure>
+              <span class="for-screen-reader"><%== title %></span>
+</button></form><% end %>
+        <a class="btn message__action-btn message__boost-btn" data-turbo-frame="new_boost_message_<%= message.client_message_id %>" data-action="soft-keyboard#open popup#close" href="/messages/<%== message.id %>/boosts/new">
+          <img class="colorize--black" aria-hidden="true" src="<%== asset_path("boost.svg") %>" width="20" height="20" />
+          <span class="for-screen-reader">New boost</span>
+</a>      </div>
+
+      <div class="flex flex-wrap border-top margin-block-start-half pad-block-start-half message__actions-grid">
+        <% if (blob = message.attachment) %>
+          <a class="btn message__action-btn center full-width hide-in-ios-pwa" title="Download" aria-label="Download" href="<%= blob_path(blob, disposition: "attachment") %>">
+            <img class="colorize--black" aria-hidden="true" src="<%== asset_path("download.svg") %>" width="20" height="20" />
+</a>
+          <button class="btn message__action-btn center full-width" data-controller="web-share" data-action="web-share#share" data-web-share-files-value="<%= blob_path(blob) %>" data-web-share-title-value="<%= blob.filename %>" title="Share" aria-label="Share">
+            <img class="colorize--black" aria-hidden="true" src="<%== asset_path("share.svg") %>" width="20" height="20" />
+</button>
+        <% else %>
+          <button class="btn message__action-btn center full-width" data-action="reply#reply" title="Reply" aria-label="Reply">
+            <img class="colorize--black" aria-hidden="true" src="<%== asset_path("reply.svg") %>" width="20" height="20" />
+</button>
+        <% end %>
+        <button class="btn message__action-btn center full-width" title="Copy link" aria-label="Copy link" data-controller="copy-to-clipboard" data-action="copy-to-clipboard#copy" data-copy-to-clipboard-success-class="btn--success" data-copy-to-clipboard-content-value="<%= base_url %>/rooms/<%== message.room_id %>/@<%== message.id %>">
+          <img class="colorize--black" aria-hidden="true" src="<%== asset_path("link.svg") %>" width="20" height="20" />
+</button>
+        <a class="btn message__action-btn center full-width message__edit-btn" data-turbo-frame="edit_message_<%= message.client_message_id %>" title="Edit" aria-label="Edit" href="/rooms/<%== message.room_id %>/messages/<%== message.id %>/edit">
+          <img class="colorize--black" aria-hidden="true" src="<%== asset_path("pencil.svg") %>" width="20" height="20" />
+</a>      </div>
+    </div>
+</details></div>

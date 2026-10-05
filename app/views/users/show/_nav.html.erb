@@ -1,0 +1,11 @@
+<%# locals: (user:) %>
+  <div class="flex-item-justify-start">
+    <%= link_back %>
+  </div>
+
+  <div class="flex align-center gap flex-item-justify-end">
+    <% if current_user.id == user.id %>
+      <a class="btn" href="/users/me/profile">
+        <img aria-hidden="true" src="<%== asset_path("pencil.svg") %>" />
+        <span class="for-screen-reader">Edit my profile</span>
+</a><% end %>  </div>

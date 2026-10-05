@@ -1,0 +1,32 @@
+name: Tests (extralite)
+
+on: [push, pull_request]
+
+concurrency:
+  group: tests-${{ format('{0}-{1}', github.head_ref || github.run_number, github.job) }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        ruby: ['3.4', '4.0', 'head']
+
+    name: ${{matrix.os}}, ${{matrix.ruby}}
+
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
+
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{matrix.ruby}}
+        bundler-cache: true
+        apt-get: libsqlite3-dev
+    - name: Compile C-extension
+      run: bundle exec rake compile
+    - name: Run tests
+      run:  bundle exec rake test

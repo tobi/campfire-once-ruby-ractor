@@ -1,0 +1,16 @@
+<%# locals: (room:, page:) %>
+
+
+
+
+<%= message_area_open_tag(room) %>
+  <%= _messages_template %>
+
+  <%= messages_open_tag(room) %>
+    <%= _rooms_show_invitation(room: room) %>
+    <%= render_messages(page, room) %>
+</div>
+  <%= turbo_stream_from(room, "messages", channel: "RoomMessagesChannel") %>
+  <%= button_to_jump_to_newest_message %>
+</div>
+

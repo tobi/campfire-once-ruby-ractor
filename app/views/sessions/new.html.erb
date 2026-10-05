@@ -1,0 +1,34 @@
+<%# locals: (email: nil) %>
+
+<section class="txt-align-center">
+  <div class="panel <%= "shake" if flash["alert"] %>">
+    <%= account_logo_tag(style: "center margin-block-end txt-xx-large") %>
+
+    <form class="flex flex-column gap" action="<%= base_url %>/session" accept-charset="UTF-8" method="post"><%= hidden_per_form_token("/session", "post") %>
+      <fieldset class="flex flex-column gap center-block upad">
+        <legend class="txt-large txt-align-center"><strong><%= account&.name %></strong></legend>
+
+        <div class="flex align-center gap">
+          <%= translation_button(:email_address) %>
+          <label class="flex align-center gap input input--actor txt-large">
+            <input required="required" class="input" autofocus="autofocus" autocomplete="username" placeholder="Enter your email address"<% if email %> value="<%= email %>"<% end %> type="email" name="email_address" id="email_address" />
+            <img aria-hidden="true" class="colorize--black" src="<%== asset_path("email.svg") %>" width="24" height="24" />
+          </label>
+        </div>
+
+        <div class="flex align-center gap">
+          <%= translation_button(:password) %>
+          <label class="flex align-center gap input input--actor txt-large">
+            <input required="required" class="input" autocomplete="current-password" placeholder="Enter your password" maxlength="72" size="72" type="password" name="password" id="password" />
+            <img aria-hidden="true" class="colorize--black" src="<%== asset_path("password.svg") %>" width="24" height="24" />
+          </label>
+        </div>
+
+        <button name="log_in" type="submit" class="btn btn--reversed center txt-large">
+          <img aria-hidden="true" src="<%== asset_path("arrow-right.svg") %>" />
+          <span class="for-screen-reader">Go</span>
+</button>      </fieldset>
+</form>  </div>
+
+  <%= help_contact %>
+</section>

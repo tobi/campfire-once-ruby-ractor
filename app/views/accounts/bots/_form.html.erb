@@ -1,0 +1,31 @@
+<%# locals: (name:, webhook_url:, avatar_blob:) %>
+<h1 class="for-screen-reader">Chat Bot Setup</h1>
+<label class="align-center center avatar__form gap" data-controller="upload-preview">
+  <div class="btn input--file">
+    <img aria-hidden="true" src="<%== asset_path("camera.svg") %>" width="20" height="20" />
+    <input class="input" accept="image/*" data-upload-preview-target="input" data-action="upload-preview#previewImage" type="file" name="user[avatar]" id="user_avatar" />
+    <span class="for-screen-reader">Upload bot avatar</span>
+  </div>
+
+  <div class="avatar input--file txt-xx-large" style="--avatar-size: var(--btn-size);">
+    <img alt="Bot avatar" data-upload-preview-target="image" src="<%= avatar_blob ? bot_avatar_url(avatar_blob) : asset_path("default-bot-avatar.svg") %>" width="48" height="48" />
+  </div>
+</label>
+
+<div class="flex align-center gap">
+  <%= translation_button(:bot_name) %>
+  <label class="flex align-center gap flex-item-grow txt-large input input--actor">
+    <input class="input" autocomplete="name" placeholder="Name the bot" autofocus="autofocus" required="required" data-1p-ignore="true" type="text"<% if name %> value="<%= name %>"<% end %> name="user[name]" id="user_name" />
+    <img aria-hidden="true" class="colorize--black" src="<%== asset_path("bot.svg") %>" width="24" height="24" />
+  </label>
+</div>
+
+<div class="flex align-center gap">
+  <%= translation_button(:webhook_url) %>
+  <label class="flex align-center gap flex-item-grow txt-large input input--actor">
+    <input class="input" placeholder="Webhook URL" type="url"<% if webhook_url %> value="<%= webhook_url %>"<% end %> name="user[webhook_url]" id="user_webhook_url" />
+    <img aria-hidden="true" class="colorize--black" src="<%== asset_path("web.svg") %>" width="24" height="24" />
+  </label>
+</div>
+
+<button class="btn btn--reversed center txt-large" type="submit"><img aria-hidden="true" src="<%== asset_path("check.svg") %>" width="20" height="20" /><span class="for-screen-reader">Save changes</span></button>

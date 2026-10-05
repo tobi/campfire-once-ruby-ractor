@@ -1,0 +1,16 @@
+<%# locals: (user:, admin:) %>
+<li class="flex align-center gap margin-none" data-value="<%= user.name.downcase %>">
+  <figure class="avatar flex-item-no-shrink" style="--avatar-size: 4ch;">
+    <%= lazy_avatar_tag(user) %>
+  </figure>
+
+  <div class="min-width">
+    <div class="overflow-ellipsis fill-shade"><strong><%= user.name %></strong></div>
+  </div>
+
+  <hr class="separator" aria-hidden="true">
+
+<% if admin %>
+    <img class="colorize--black flex-item-no-shrink" aria-hidden="true" src="<%== asset_path("check.svg") %>" width="20" height="20" />
+<% end %>
+</li>

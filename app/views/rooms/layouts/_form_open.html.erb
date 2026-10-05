@@ -1,0 +1,24 @@
+<%# locals: (room:, action:, admin:, transition:) %>
+<section class="panel txt-align-center" style="view-transition-name: <%= transition %>">
+  
+  <form action="<%= action %>" accept-charset="UTF-8" method="post"><% if room.id %><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %><% else %><%= form_token(action) %><% end %>
+  <div class="flex align-center gap">
+<% if admin %>
+      <%= translation_button(:room_name) %>
+
+      <label class="flex-item-grow txt-large">
+        <input name="room[name]" id="room_name" class="input full-width" required="required" autofocus="autofocus" placeholder="Name the room" data-turbo-permanent="true" data-action="keydown.enter-&gt;form#submit:prevent" type="text"<% unless room.name.nil? %> value="<%= room.name %>"<% end %> />
+        <span class="for-screen-reader">Name this room</span>
+      </label>
+<% else %>
+      <h1 class="flex-item-grow txt-x-large">
+        <%= room.name %>
+      </h1>
+<% end %>
+  </div>
+
+  <hr class="margin-block borderless">
+
+  <section class="room-access margin-block pad-inline fill-shade border-radius">
+    
+  <menu class="flex flex-column gap margin-none pad overflow-y constrain-height" data-controller="filter" data-filter-active-class="filter--active" data-filter-selected-class="selected">

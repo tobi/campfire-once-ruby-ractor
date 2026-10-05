@@ -1,0 +1,13 @@
+/tmp/
+/log/
+/storage/
+/vendor/bundle/
+/.bundle/
+/e
+vendor/gems/extralite/lib/extralite_ext.so
+vendor/gems/extralite/ext/extralite/*.o
+vendor/gems/extralite/ext/extralite/Makefile
+vendor/gems/extralite/ext/extralite/mkmf.log
+vendor/gems/extralite/ext/extralite/extralite_ext.so
+# a bench still writing here; committed when it finishes
+/bench/results/go-rust-ruby-20261005/

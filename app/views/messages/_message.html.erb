@@ -1,0 +1,31 @@
+<%# locals: (message:, room_name:) %>
+<%# Mirrors messages/_message, _actions, _presentation and boosts/_boosts; the whole output is one cached fragment (Cache.fragment :message, id, updated_at). %>
+
+  <div id="message_<%= message.client_message_id %>" class="message <%== "message--emoji" if message.all_emoji? %>" data-controller="reply" data-user-id="<%== message.creator_id %>" data-message-id="<%== message.id %>" data-message-timestamp="<%== created = Campfire::Clock.epoch_ms(message.created_at) %>" data-message-updated-at="<%== Campfire::Clock.epoch_ms(message.updated_at) %>" data-sort-value="<%== created %>" data-messages-target="message" data-search-results-target="message" data-refresh-room-target="message" data-reply-composer-outlet="#composer">
+    <h2 class="message__day-separator"><time datetime="<%== iso = Campfire::Clock.iso8601(message.created_at) %>" data-local-time-target="date"></time></h2>
+
+    <figure class="avatar message__avatar">
+      <%= avatar_tag(message.creator_id, message.creator_name, message.creator_bio, message.creator_updated_at) %>
+    </figure>
+
+    <turbo-frame id="edit_message_<%= message.client_message_id %>">
+      <div class="message__body">
+        <div class="message__body-content">
+          <div class="message__meta">
+            <h3 class="message__heading">
+              <span class="message__author" title="<%= user_title(message.creator_name, message.creator_bio) %>">
+                <strong data-reply-target="author"><%= message.creator_name %></strong>
+              </span>
+              <a target="_top" class="message__permalink" href="/rooms/<%== message.room_id %>/@<%== message.id %>"><time class="message__timestamp" datetime="<%== iso %>" data-local-time-target="time"></time></a>
+              <span class="message__room">
+                <a target="_top" data-reply-target="link" href="/rooms/<%== message.room_id %>/@<%== message.id %>"><%= room_name %></a>
+              </span>
+            </h3>
+            <%= _messages_actions(message: message) %>
+          </div>
+          <%= _messages_presentation(message: message) %>
+          <%= _messages_boosts_boosts(message: message) %>
+        </div>
+      </div>
+    </turbo-frame>
+</div>

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Fetch a path from the Rails reference and from our server, normalise the
+# random CSRF tokens, and print a unified diff (exit 0 when identical).
+#
+#   bin/parity /rooms/486777696
+#   bin/parity '/rooms/486777696/messages?before=933434650'
+#   OURS=http://127.0.0.1:3211 bin/parity /rooms/486777696
+#   bin/parity -X POST -d 'a=b' /path       # extra args go to both curls
+#
+# Env: REF (default http://127.0.0.1:3100), OURS (default http://127.0.0.1:3200),
+#      COOKIE (default contents of ../ref-html/cookie.txt), UA (user agent),
+#      HEADERS=1 also diffs status + content-type.
+# Our request carries `Host: <ref host>` so absolute URLs (base_url) match.
+set -euo pipefail
+here="$(cd "$(dirname "$0")/.." && pwd)"
+REF="${REF:-http://127.0.0.1:3100}"
+OURS="${OURS:-http://127.0.0.1:3200}"
+COOKIE="${COOKIE:-$(cat "$here/../ref-html/cookie.txt")}"
+UA="${UA:-Mozilla/5.0}"
+args=("$@")
+path="${args[-1]}"
+unset 'args[-1]'
+ref_host="${REF#*://}"
+
+norm() {
+  sed -E \
+    -e 's/(name="authenticity_token" value=")[^"]*/\1TOKEN/g' \
+    -e 's/(name="csrf-token" content=")[^"]*/\1TOKEN/g'
+}
+
+fetch() {
+  local base="$1"; shift
+  if [[ -n "${HEADERS:-}" ]]; then
+    curl -s -A "$UA" -b "$COOKIE" -o /dev/stderr -w 'STATUS %{http_code} %{content_type}\n' "$@" "${args[@]}" "$base$path" 2>&1
+  else
+    curl -s -A "$UA" -b "$COOKIE" "$@" "${args[@]}" "$base$path"
+  fi
+}
+
+ref="$(mktemp)"; ours="$(mktemp)"
+trap 'rm -f "$ref" "$ours"' EXIT
+fetch "$REF" | norm > "$ref"
+fetch "$OURS" -H "Host: $ref_host" | norm > "$ours"
+if diff -u --label "ref $path" --label "ours $path" "$ref" "$ours"; then
+  echo "IDENTICAL $path ($(wc -c < "$ref") bytes)" >&2
+else
+  exit 1
+fi

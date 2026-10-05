@@ -1,0 +1,263 @@
+#ifndef EXTRALITE_H
+#define EXTRALITE_H
+
+#include "ruby.h"
+#include "ruby/thread.h"
+#include "ruby/encoding.h"
+
+#ifdef EXTRALITE_NO_BUNDLE
+#include <sqlite3.h>
+#else
+#include "../sqlite3/sqlite3.h"
+#endif
+
+// debug utility
+#define INSPECT(str, obj) { \
+  printf(str); \
+  VALUE s = rb_funcall(obj, ID_inspect, 0); \
+  printf(": %s\n", StringValueCStr(s)); \
+}
+#define CALLER() rb_funcall(rb_mKernel, rb_intern_const("caller"), 0)
+#define TRACE_CALLER() INSPECT("caller: ", CALLER())
+
+#define SAFE(f) (VALUE (*)(VALUE))(f)
+
+#define INVOKE_PROC(proc, argc, argv) rb_proc_call_with_block(proc, argc, argv, Qnil)
+
+extern VALUE cDatabase;
+extern VALUE cQuery;
+extern VALUE cIterator;
+extern VALUE cChangeset;
+extern VALUE cBlob;
+extern VALUE cTransform;
+
+extern ID ID_inspect;
+
+extern VALUE mJSON;
+
+extern VALUE cError;
+extern VALUE cSQLError;
+extern VALUE cBusyError;
+extern VALUE cInterruptError;
+extern VALUE cParameterError;
+
+extern ID ID_call;
+extern ID ID_each;
+extern ID ID_keys;
+extern ID ID_new;
+extern ID ID_parse;
+extern ID ID_strip;
+extern ID ID_to_s;
+extern ID ID_track;
+
+extern VALUE SYM_splat;
+extern VALUE SYM_array;
+extern VALUE SYM_hash;
+
+enum progress_handler_mode {
+  PROGRESS_NONE,
+  PROGRESS_NORMAL,
+  PROGRESS_ONCE,
+  PROGRESS_AT_LEAST_ONCE,
+};
+
+struct progress_handler {
+  enum progress_handler_mode  mode;
+  VALUE                       proc;
+  int                         period;
+  int                         tick;
+  int                         tick_count;
+  int                         call_count;
+};
+
+#define DB_F_STMT_CACHE (1L << 0) // cache stmts
+
+typedef struct {
+  sqlite3                 *sqlite3_db;
+  VALUE                   stmt_cache;
+  VALUE                   trace_proc;
+  int                     flags;
+  int                     gvl_release_threshold;
+  struct progress_handler progress_handler;
+} Database_t;
+
+enum query_mode {
+  QUERY_HASH,
+  QUERY_SPLAT,
+  QUERY_ARRAY,
+  QUERY_VOID
+};
+
+typedef struct {
+  VALUE               self;
+  VALUE               db;
+  VALUE               sql;
+  VALUE               transform;
+  VALUE               bound_params;
+  Database_t          *db_struct;
+  sqlite3             *sqlite3_db;
+  sqlite3_stmt        *stmt;
+  int                 eof;
+  int                 closed;
+  int                 should_reset;
+  int                 transform_object;
+  enum query_mode     query_mode;
+} Query_t;
+
+typedef struct {
+  VALUE               query;
+} Iterator_t;
+
+#ifdef EXTRALITE_ENABLE_CHANGESET
+typedef struct {
+  int             changeset_len;
+  void            *changeset_ptr;
+} Changeset_t;
+#endif
+
+#define TRANSFORM_F_ARRAY     (1 << 0) // node is an array container
+#define TRANSFORM_F_IDENTITY  (1 << 1) // node is an identity column
+#define TRANSFORM_F_NAME      (1 << 2) // node has a name VALUE
+
+enum transform_node_type {
+  TRANSFORM_T_AUTO,
+  TRANSFORM_T_INTEGER,
+  TRANSFORM_T_FLOAT,
+  TRANSFORM_T_TEXT,
+  TRANSFORM_T_BOOL,
+  TRANSFORM_T_JSON,
+  TRANSFORM_T_PROC,
+  TRANSFORM_T_RELATION
+};
+
+struct transform_node {
+  enum transform_node_type type;
+  unsigned short flags;
+  unsigned short idx; // column index
+
+  VALUE name;
+  VALUE conversion_proc;
+
+  unsigned short identity_idx; // identity column index
+  struct transform_node *identity_node;
+
+  struct transform_node *subnodes_head;
+  struct transform_node *subnodes_tail;
+  struct transform_node *next;
+};
+
+typedef struct {
+  struct transform_node *root;
+} Transform_t;
+
+enum row_mode {
+  ROW_YIELD,
+  ROW_MULTI,
+  ROW_SINGLE
+};
+
+typedef struct {
+  VALUE               self;
+  VALUE               sql;
+  VALUE               params;
+  VALUE               transform;
+
+  Database_t          *db;
+  sqlite3             *sqlite3_db;
+  sqlite3_stmt        *stmt;
+  unsigned int        flags;
+
+  int                 gvl_release_threshold;
+  enum query_mode     query_mode;
+  enum row_mode       row_mode;
+  int                 max_rows;
+
+  int                 eof;
+  int                 step_count;
+  int                 total_changes;
+} query_ctx;
+
+enum gvl_mode {
+  GVL_RELEASE,
+  GVL_HOLD
+};
+
+#define STMT_CTX_F_USE_CACHE (1L << 0)
+#define STMT_CTX_F_CACHE_HIT (1L << 1)
+
+typedef struct {
+  VALUE stmt_cache;
+  VALUE sql;
+
+  sqlite3 *db;
+  sqlite3_stmt **stmtptr;
+
+  const char *str;
+  size_t len;
+
+  enum gvl_mode gvl_mode;
+  unsigned int flags;
+  int rc;
+  int total_changes;
+  int argc;
+  VALUE *argv;
+} stmt_ctx;
+
+#define ALL_ROWS -1
+#define SINGLE_ROW -2
+#define ROW_YIELD_OR_MODE(default) (rb_block_given_p() ? ROW_YIELD : default)
+#define ROW_MULTI_P(mode) (mode == ROW_MULTI)
+#define QUERY_CTX(self, sql, db, stmt, params, transform, query_mode, row_mode, max_rows) { \
+  self, sql, params, transform, \
+  db, db->sqlite3_db, stmt, 0, \
+  db->gvl_release_threshold, query_mode, row_mode, max_rows, \
+  0, 0, 0  \
+}
+
+#define DEFAULT_GVL_RELEASE_THRESHOLD 1000
+#define DEFAULT_PROGRESS_HANDLER_PERIOD 1000
+#define DEFAULT_PROGRESS_HANDLER_TICK 10
+
+extern rb_encoding *UTF8_ENCODING;
+
+typedef VALUE (*safe_query_impl)(query_ctx *);
+
+VALUE safe_batch_execute(query_ctx *ctx);
+VALUE safe_batch_query(query_ctx *ctx);
+VALUE safe_batch_query_splat(query_ctx *ctx);
+VALUE safe_batch_query_array(query_ctx *ctx);
+VALUE safe_query_splat(query_ctx *ctx);
+VALUE safe_query_array(query_ctx *ctx);
+VALUE safe_query_changes(query_ctx *ctx);
+VALUE safe_total_changes(query_ctx *ctx);
+VALUE safe_query_columns(query_ctx *ctx);
+VALUE safe_query_hash(query_ctx *ctx);
+VALUE safe_query_transform(query_ctx *ctx);
+VALUE safe_query_single_row_hash(query_ctx *ctx);
+VALUE safe_query_single_row_splat(query_ctx *ctx);
+VALUE safe_query_single_row_array(query_ctx *ctx);
+VALUE safe_query_single_row_transform(query_ctx *ctx);
+
+VALUE Query_each(VALUE self);
+VALUE Query_next(int argc, VALUE *argv, VALUE self);
+VALUE Query_to_a(VALUE self);
+VALUE Query_transform_set(VALUE self, VALUE transform);
+
+void make_stmt_ctx(stmt_ctx *ctx, Database_t *db, sqlite3_stmt **stmt, VALUE sql, int argc, VALUE *argv);
+void prep_single_stmt(stmt_ctx *ctx);
+int exec_multi_stmt(stmt_ctx *ctx);
+void bind_all_parameters(sqlite3_stmt *stmt, int argc, VALUE *argv);
+void bind_all_parameters_from_object(sqlite3_stmt *stmt, VALUE obj);
+int stmt_iterate(query_ctx *ctx);
+VALUE cleanup_stmt(query_ctx *ctx);
+
+void Database_pre_query_hook(Database_t *db, sqlite3_stmt *stmt, VALUE sql, int argc, VALUE *argv);
+sqlite3 *Database_sqlite3_db(VALUE self);
+enum gvl_mode Database_prepare_gvl_mode(Database_t *db);
+Database_t *self_to_database(VALUE self);
+
+void *gvl_call(enum gvl_mode mode, void *(*fn)(void *), void *data);
+
+struct transform_node *get_transform_root(VALUE obj);
+
+#endif /* EXTRALITE_H */

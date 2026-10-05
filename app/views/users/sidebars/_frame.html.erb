@@ -1,0 +1,58 @@
+<%# locals: (directs:, others:, user:) %>
+<%= sidebar_turbo_frame_open %>
+  <%= sidebar_stream_sources(user.id) %>
+
+  <div class="sidebar__container overflow-y overflow-hide-scrollbar"
+      data-controller="badge-dot"
+      data-badge-dot-unread-class="unread"
+      data-action="rooms-list:unread@window->badge-dot#update rooms-list:read@window->badge-dot#update turbo:submit-start->turbo-frame#unpermanize">
+    <turbo-frame id="direct_rooms_control" target="_top">
+      <div class="directs gap overflow-x overflow-hide-scrollbar">
+        <a class="direct direct__new" data-turbo-frame="_self" href="/rooms/directs/new">
+          <span class="avatar avatar--icon">
+            <img aria-hidden="true" class="colorize--black" src="<%== asset_path("messages-add.svg") %>" width="20" height="20" />
+          </span>
+
+          <span class="direct__author flex max-width min-width border-radius pad-inline-half">
+            <span class="for-screen-reader">New</span>
+            <span class="txt-small overflow-clip">Ping</span>
+          </span>
+</a>
+        <div id="direct_rooms" contents data-controller="sorted-list" data-action="rooms-list:unread@window->sorted-list#updateItem">
+          <%= sidebar_directs(directs, user) %>
+        </div>
+
+        <div contents>
+          <%= sidebar_direct_placeholders(user) %>
+        </div>
+      </div>
+    </turbo-frame>
+
+    <div class="rooms position-relative flex flex-column gap">
+      <div id="shared_rooms" contents data-controller="sorted-list">
+<% others.each do |item| %>
+          <%= sidebar_shared(item.room_id_s, item.room_name, item.room_type, item.unread) %>
+<% end %>
+      </div>
+
+<% if user.administrator? || !account.restrict_room_creation_to_administrators? %>
+        <a class="rooms__new-btn btn room align-center gap txt-reversed" aria-label="New Chat Room" href="/rooms/opens/new">
+          <img aria-hidden="true" style="view-transition-name: new-room" src="<%== asset_path("add.svg") %>" width="20" height="20" />
+</a><% end %>    </div>
+
+    <button class="btn sidebar__toggle" data-action="toggle-class#toggle">
+      <img aria-hidden="true" src="<%== asset_path("menu.svg") %>" width="20" height="20" />
+      <span class="for-screen-reader">Open menu</span>
+    </button>
+  </div>
+
+  <div class="flex align-end sidebar__tools gap justify-end">
+    <a class="btn avatar flex-item-no-shrink sidebar__tool" href="/users/me/profile">
+      <img aria-hidden="true" style="view-transition-name: avatar-<%== user.id %>" src="<%== fresh_user_avatar_path(user.id, user.updated_at) %>" width="48" height="48" />
+      <span class="for-screen-reader">My Settings</span>
+</a>
+    <a class="btn align-center gap txt-reversed sidebar__tool" href="/account/edit">
+      <img aria-hidden="true" style="view-transition-name: account-settings" src="<%== asset_path("settings.svg") %>" width="20" height="20" />
+      <span class="for-screen-reader">Account Settings</span>
+</a>  </div>
+</turbo-frame>

@@ -1,0 +1,2 @@
+<%# locals: (user:) %>
+<span class="mention" sgid="<%== user_attachable_sgid(user.id) %>"><%= avatar_tag(user.id, user.name, user.bio, user.updated_at) %> <%= user.name %></span>

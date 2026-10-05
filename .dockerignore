@@ -1,0 +1,8 @@
+tmp
+storage
+log
+vendor/bundle
+.bundle
+bench/results
+vendor/gems/extralite/lib/extralite_ext.so
+vendor/gems/extralite/ext/extralite/*.o

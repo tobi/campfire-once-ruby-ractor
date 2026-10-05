@@ -1,0 +1,13 @@
+  <div class="flex-item-justify-start">
+    <%= link_back %>
+  </div>
+
+  <div class="flex-item-justify-end">
+    <form data-controller="sessions" action="/session" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="delete" /><%= form_token("/session", "delete") %>
+      <input type="hidden" name="push_subscription_endpoint" id="push_subscription_endpoint" data-sessions-target="pushSubscriptionEndpoint" />
+
+      <button class="btn" data-action="sessions#logout:prevent">
+        <img aria-hidden="true" src="<%== asset_path("logout.svg") %>" />
+        <span class="for-screen-reader">Log out</span>
+      </button>
+</form>  </div>

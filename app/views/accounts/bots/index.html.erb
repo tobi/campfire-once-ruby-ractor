@@ -1,0 +1,23 @@
+
+
+<section class="panel panel--wide txt-align-center flex flex-column position-relative" style="view-transition-name: chat-bots">
+  <div class="flex align-center gap">
+    <div class="panel__button">
+      <%= translation_button(:chat_bots) %>
+    </div>
+    <div class="pad-inline-double center">
+      <h1 class="margin-none">Chat bots</h1>
+      <p class="margin-none-block-start">With Chat bots, other sites and services can post updates directly to Campfire.</p>
+
+      <a class="btn btn--reversed txt-large" aria-label="Add a chat bot" href="/account/bots/new">
+        <img aria-hidden="true" src="<%== asset_path("bot.svg") %>" width="20" height="20" />
+        <img aria-hidden="true" src="<%== asset_path("add.svg") %>" width="20" height="20" />
+</a>    </div>
+  </div>
+
+  <div class="pad-inline pad-block-start ">
+    <menu class="flex flex-column gap margin-none pad">
+      <%= (@bots.each { |bot| _accounts_bots_bot(bot: bot) }; nil) %>
+    </menu>
+  </div>
+</section>

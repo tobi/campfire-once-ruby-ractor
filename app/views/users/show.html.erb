@@ -1,0 +1,54 @@
+<%# locals: (user:) %>
+
+
+<section class="panel txt-align-center">
+  <div class="flex flex-column gap <%= "banned" if user.banned? %>">
+    <div class="avatar txt-xx-large center" style="background: white">
+      <img alt="Profile avatar" class="avatar" src="<%== fresh_user_avatar_path(user.id, user.updated_at) %>" />
+    </div>
+
+    <% if user.bot? %>
+      <div class="pad-double--inline push--inline push--block-start">
+        <% if user.active? %>
+          <form class="button_to" method="post" action="/rooms/directs?user_ids%5B%5D=<%== user.id %>"><button class="btn btn--primary full-width txt--large" type="submit"><img src="<%== asset_path("messages.svg") %>" /></button><%= hidden_per_form_token("/rooms/directs", "post") %></form>
+        <% else %>
+          <div><%= user.name %> is no longer on this account</div>
+        <% end %>
+      </div>
+    <% else %>
+      <% unless user.deactivated? %>
+        <div class="flex flex-column gap" style="--row-gap: calc(var(--block-space) / 3)">
+          <h1 class="txt-x-large txt-tight-lines margin-none"><%= user.name %></h1>
+          <% if current_user.can_administer? %>
+            <div><a href="mailto:<%= user.email_address %>"><%= user.email_address %></a></div>
+          <% end %>
+          <div><%= user.bio %></div>
+        </div>
+
+        <% if user.active? %>
+          <div class="pad-inline-double margin-inline margin-block-start">
+            <form class="button_to" method="post" action="/rooms/directs?user_ids%5B%5D=<%== user.id %>"><button class="btn btn--reversed full-width txt-large" type="submit">
+              <img aria-hidden="true" aria-label="Ping <%= user.name %>" src="<%== asset_path("messages.svg") %>" />
+</button><%= hidden_per_form_token("/rooms/directs", "post") %></form>          </div>
+
+          <% if current_user.can_administer? %>
+            <hr class="margin-block-start borderless">
+
+            <%= _users_profiles_transfer(user: user) %>
+          <% end %>
+        <% end %>
+
+        <% if current_user.can_administer? && current_user.id != user.id %>
+          <div class="margin-block-start">
+            <%= _users_ban_button(user: user) %>
+          </div>
+        <% end %>
+      <% else %>
+        <div>
+          <h1 class="txt-x-large margin-none"><%= user.name %></h1>
+          <div><%= user.name %> is no longer on this account</div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</section>

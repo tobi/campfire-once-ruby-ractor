@@ -1,0 +1,44 @@
+<%# locals: (message:, mpath:) %>
+<turbo-frame id="edit_message_<%== message.client_message_id %>">
+  <div class="message__body position-relative" data-controller="scroll-into-view">
+    <div class="message__body-content message__body-content--editing gap">
+      <% if (blob = message.attachment) %>
+        <%= message_attachment_presentation(message, blob) %>
+
+        <div class="message__edit-btns flex align-center justify-space-between gap full-width pad-block-start-half">
+          <button name="button" type="submit" class="btn btn--negative center margin-block-end" form="delete_form_message_<%== message.client_message_id %>" data-turbo-confirm="Are you sure you want to delete this message?">
+            <img aria-hidden="true" src="<%== asset_path("trash.svg") %>" />
+            <span class="for-screen-reader">Delete message</span>
+</button>        </div>
+      <% else %>
+        <div class="composer--edit composer--rich-text">
+          <form id="form_message_<%== message.client_message_id %>" data-controller="form" data-action="lexxy:file-accept-&gt;form#preventAttachment keydown.esc-&gt;form#cancel keydown.ctrl+enter-&gt;form#submit:prevent keydown.meta+enter-&gt;form#submit:prevent" action="<%== mpath %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><input type="hidden" name="authenticity_token" value="<%== form_authenticity_token(mpath, "patch") %>" />
+            <div class="full-width input input--actor min-width fill-white">
+              <lexxy-editor rows="1" class="input lexxy-content" aria-multiline="true" aria-label="Edit message" autofocus="autofocus" permitted-attachment-types="application/vnd.campfire.mention application/vnd.actiontext.opengraph-embed" data-action="lexxy:change-&gt;typing-notifications#start keydown-&gt;composer#submitByKeyboard:capture" data-direct-upload-url="<%= base_url %>/rails/active_storage/direct_uploads" data-blob-url-template="<%= base_url %>/rails/active_storage/blobs/redirect/:signed_id/:filename" id="message_body" input="message_body_trix_input_message_<%== message.client_message_id %>" name="message[body]" value="<%= editable_body(message) %>">
+                <lexxy-prompt trigger="@" name="mention" src="/autocompletable/users?room_id=<%== message.room_id %>" remote-filtering="true" empty-results="No matches"></lexxy-prompt>
+</lexxy-editor>            </div>
+
+            <a data-form-target="cancel" hidden="hidden" href="<%== mpath %>">Close editor and discard changes</a>
+
+            <div class="message__edit-btns flex align-center justify-space-between gap full-width pad-block-start-half">
+              <button name="button" type="submit" class="btn btn--reversed">
+                <img aria-hidden="true" src="<%== asset_path("check.svg") %>" />
+                <span class="for-screen-reader">Save changes</span>
+</button>
+              <button name="button" type="submit" class="btn btn--negative" form="delete_form_message_<%== message.client_message_id %>" data-turbo-confirm="Are you sure you want to delete this message?">
+                <img aria-hidden="true" src="<%== asset_path("trash.svg") %>" />
+                <span class="for-screen-reader">Delete message</span>
+</button>            </div>
+</form>        </div>
+      <% end %>
+    </div>
+
+    <div class="message__actions flex flex-wrap">
+      <a class="message__action-btn message__edit-close-btn txt-small btn btn--borderless" href="<%== mpath %>">
+        <img class="colorize--black" aria-hidden="true" src="<%== asset_path("remove.svg") %>" />
+        <span class="for-screen-reader">Close editor and discard changes</span>
+</a>    </div>
+
+    <form id="delete_form_message_<%== message.client_message_id %>" data-turbo-frame="edit_message_<%== message.client_message_id %>" action="<%== mpath %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="delete" /><input type="hidden" name="authenticity_token" value="<%== form_authenticity_token(mpath, "delete") %>" />
+  </div>
+</turbo-frame>

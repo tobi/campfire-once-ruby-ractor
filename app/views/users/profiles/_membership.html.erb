@@ -1,0 +1,12 @@
+<%# locals: (room:, involvement:) %>
+<li class="flex align-center gap margin-none min-width membership-item">
+  <a class="overflow-ellipsis fill-shade txt-primary txt-undecorated" href="/rooms/<%= room.id %>">
+    <strong><%= room_display_name(room) %></strong>
+</a>
+  <hr class="separator" aria-hidden="true">
+
+  <span class="txt-small">
+    <turbo-frame id="involvement_<%= room.dom_key %>">
+      <%= button_to_change_involvement(room, involvement) %>
+</turbo-frame>  </span>
+</li>

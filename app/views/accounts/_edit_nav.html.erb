@@ -1,0 +1,15 @@
+  <div class="flex-item-justify-start">
+    <%= link_back_to_last_room_visited %>
+  </div>
+
+<% if current_user.administrator? %>
+    <div class="flex align-center gap flex-item-justify-end">
+      <a class="btn" style="view-transition-name: chat-bots" href="/account/bots">
+        <img aria-hidden="true" src="<%== asset_path("bot.svg") %>" width="20" height="20" />
+        <span class="for-screen-reader">Set up chat bots</span>
+</a>
+      <a class="btn" style="view-transition-name: custom-styles" href="/account/custom_styles/edit">
+        <img aria-hidden="true" src="<%== asset_path("art.svg") %>" width="20" height="20" />
+        <span class="for-screen-reader">Custom styles</span>
+</a>    </div>
+<% end %>

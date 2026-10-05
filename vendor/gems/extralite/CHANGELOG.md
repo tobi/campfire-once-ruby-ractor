@@ -1,0 +1,347 @@
+# 3.1.3 2026-10-03
+
+- Fix database finalization of stmts (on free/close)
+- Use stmt_cache for storing Query stmts
+
+# 3.1.2 2026-10-03
+
+- Fix handling of failed BEGIN in #transaction (#89)
+- Reset of cached statements post-query (#88)
+- Add missing wal checkpoint, integrity_check docs to README
+- Implement `Database#integrity_check`, `Database#quick_check`
+
+# 3.1.1 2026-09-26
+
+- Fix clearing of stmt cache after `DB#close` or after GC (#87)
+
+# 3.1.0 2026-09-22
+
+- Update bundled SQLite to 3.53.4
+- Add `stmt_cache` option to `Database#initialize`
+- Implement automatic stmt caching for parametric queries
+- Change handling of multi stmt query and execute invocations.
+  - For #execute, accept multiple statements but raise error if parameters are given
+  - For #query, raise error on multiple statements
+
+## 3.0.1 2026-07-21
+
+- Fix passing nil transform to `DB#prepare`
+- Remove support for Ruby 3.2, 3.3
+
+## 3.0.0 2026-07-02
+
+- Update benchmark results in README
+- Prevent extension loading using `load_extension` SQL function
+- Remove `wal: true` option, add `legacy: true` option for
+- Change default behaviour to set WAL journal mode + synchronous + foreign keys
+- Add transform DSL
+- Add support for type coercion in transforms
+- Add `Extralite::Transform` class for transforming rows into an object graph
+
+## 2.15 2026-06-28
+
+- Update bundled SQLite to 3.53.3
+- Update dependencies
+
+## 2.14 2026-01-25
+
+- Update bundled SQLite to 3.51.2
+- Update dependencies
+
+## 2.13 2025-08-03
+
+- Update bundled SQLite to version 30.50.4
+- Update README performance numbers
+
+## 2.12 2025-03-25
+
+- Reimplement trace, provide trace proc with bound parameters [#80](https://github.com/digital-fabric/extralite/issues/80)
+
+## 2.11 2025-03-14
+
+- Remove support for Ruby versions older than 3.2.
+- Expand SQL given to trace proc [#80](https://github.com/digital-fabric/extralite/issues/80)
+
+## 2.10 2025-02-17
+
+- Update bundled SQLite to version 3.49.0.
+
+## 2.9 2025-01-18
+
+- Update dependencies, test matrix.
+- Update bundled SQLite to version 3.48.0.
+- Optimize getting column names when returning rows as hashes.
+
+## 2.8.2 2024-06-02
+
+- Update bundled SQLite to version 3.46.0. [#74](https://github.com/digital-fabric/extralite/pull/74)
+
+## 2.8.1 2024-04-15
+
+- Update bundled sqlite to version 3.45.3.
+- Fix `Database#execute` for SQL ending with a comment.
+  [#72](https://github.com/digital-fabric/extralite/pull/72)
+
+# 2.8 2024-03-10
+
+- Improve documentation.
+- Implement `Database#wal_checkpoint`.
+- Rename query modes: `hash` (the default mode), `array`, `splat`, simplify querying APIs.
+  [#69](https://github.com/digital-fabric/extralite/pull/69)
+
+# 2.7.1 2024-02-11
+
+- Fix API docs.
+
+# 2.7 2024-02-09
+
+- Improve progress handler API, add mode, period, tick options, global progress
+  handler. [#68](https://github.com/digital-fabric/extralite/pull/68)
+- Rework `Database#initialize` options.
+- Add argv row mode (for passing column values as argv).
+- Streamline and improve query methods.
+  [#67](https://github.com/digital-fabric/extralite/pull/67)
+- Implement row transforms.
+
+# 2.6 2024-01-23
+
+- Implement changeset API.
+  [#58](https://github.com/digital-fabric/extralite/issues/58)
+- Reorganize README, update benchmarks.
+  [#63](https://github.com/digital-fabric/extralite/issues/63)
+- Implement progress handler API.
+  [#62](https://github.com/digital-fabric/extralite/issues/62)
+- Implement savepoint methods.
+
+# 2.5 2024-01-16
+
+- Update bundled sqlite to version 3.45.0.
+- Implement `Database#batch_query` and related methods.
+  [53](https://github.com/digital-fabric/extralite/issues/53)
+- Accept more options in `Database#initialize`.
+  [48](https://github.com/digital-fabric/extralite/issues/48)
+- Fix `Database#pragma` to return single value when reading pragma value.
+- Accept database name in `Database#tables` method.
+- Improve `Database#batch_execute` - now accepts Enumerable and Callable
+  parameters. [52](https://github.com/digital-fabric/extralite/issues/52)
+- Rename `Database#execute_multi` to `Database#batch_execute`.
+- Implement `Query#clone`.
+  [51](https://github.com/digital-fabric/extralite/issues/51)
+- Add support for GC compaction.
+- Remove support for Ruby 2.7.
+- Implement `Query#<<`.
+  [49](https://github.com/digital-fabric/extralite/issues/49)
+- Allow passing parameters in array.
+- Add support for ractors.
+  [#50](https://github.com/digital-fabric/extralite/issues/50)
+
+# 2.4 2023-12-24
+
+- Implement GVL release threshold.
+  [#46](https://github.com/digital-fabric/extralite/pull/46)
+- Implement write barriers for better GC performance.
+- Add support for binding large numbers and symbols.
+  [#43](https://github.com/digital-fabric/extralite/pull/43)
+- Implement Database#transaction.
+  [#42](https://github.com/digital-fabric/extralite/pull/42)
+- Add support for binding BLOBs.
+  [#40](https://github.com/digital-fabric/extralite/pull/40)
+- Minor fixes and cleanup of C-code.
+- Fix `Database#inspect` for a closed database instance
+  [#37](https://github.com/digital-fabric/extralite/issues/37)
+- Add support for binding named parameters from Struct and Data classes
+  [#30](https://github.com/digital-fabric/extralite/pull/30)
+- Update bundled SQLite code to version 3.44.2
+  [#32](https://github.com/digital-fabric/extralite/pull/32)
+
+# 2.3 2023-11-12
+
+- Update bundled SQLite to version 3.44.0 (#29)
+
+# 2.2 2023-10-14
+
+- Set correct encoding for strings values in query results (#27)
+- Reset query after running it in Sequel adapter (#26)
+
+# 2.1 2023-07-11
+
+- Implement `Database#execute`, `Query#execute` for data-manipulation queries
+- Add option for opening databases for read only access
+
+# 2.0 2023-07-08
+
+- Fix Sequel migrations (#8)
+- Redesign prepared statement functionality (#24)
+  - Rewrite `Extralite::PreparedStatement` into `Extralite::Query` with breaking
+    API changes
+  - Add `Extralite::Iterator` class for external iteration
+  - Add `Query#each_xxx`, `Query#to_a_xxx` method
+  - Add `Query#eof?` method
+
+# 1.27 2023-06-12
+
+- Fix execution of prepared statements in Sequel adapter (#23 @gschlager)
+- Update bundled sqlite code to version 3.42.0 (#22 @gschlager)
+
+# 1.26 2023-05-17
+
+- Improve documentation
+
+# 1.25 2023-03-10
+
+- Remove bundled sqlite3 source files from extralite.gemspec
+- Restore testing on Ruby 2.7
+
+# 1.24 2023-02-02
+
+- Fix closing database with open statements
+- Improve error reporting in  `Database#initialize`
+- Fix `extralite-bundle` gem compilation
+- Improve error handling, add methods for error information
+  - Use extended result codes
+  - Add `Database#errcode`
+  - Add `Database#errmsg`
+  - Add `Database#error_offset`
+
+# 1.23 2023-01-26
+
+- Add `Database#trace` (#21)
+- Add `Database#total_changes` (#20)
+- Add `Database#busy_timeout=` (#19)
+- Add `Database#limit` (#16)
+- Improve error handling
+
+# 1.22 2023-01-23
+
+- Improve documentation (#17)
+
+# 1.21 2023-01-23
+
+- Update bundled sqlite to version 3.40.1 (#18)
+
+# 1.20 2023-01-21
+
+- Fix compilation error (#15 @sitano)
+- Add status methods `Extralite.runtime_status`, `Database#status`,
+  `PreparedStatement#status` (#14 @sitano)
+- Add `Database#interrupt` (#13 @sitano)
+- Add `Database#backup` (#11 @sitano)
+- Derive `Extralite::Error` from `StandardError` (#10 @sitano)
+
+## 1.19 2022-12-01
+
+- Add `Database#execute_multi`
+- Add `PreparedStatement#execute_multi`
+
+## 1.18 2022-12-01
+
+- Fix usage with system sqlite3 lib where `load_extension` is disabled
+
+## 1.17 2022-10-31
+
+- Fix `Database#tables` to work on older version of sqlite (pre 3.33.0)
+
+## 1.16 2022-10-04
+
+- Fix `Database#pragma` to always return array of records
+
+## 1.15 2022-10-01
+
+- Add `Database#pragma` method
+- Add `Database#tables` method
+
+## 1.14 2022-02-28
+
+- Introduce `extralite-bundle` gem for bundling SQLite, use system lib by
+  default.
+
+## 1.13.1 2022-02-27
+
+- Fix compilation on TruffleRuby
+
+## 1.13 2022-02-27
+
+- Implement prepared statements (#7)
+- Update SQLite to 3.38.0 (#6)
+
+## 1.12 2022-02-15
+
+- Add `Extralite.sqlite3_version` method
+- Bundle sqlite3 in gem
+
+## 1.11 2021-12-17
+
+- Fix compilation on MacOS (#3)
+
+## 1.10 2021-12-15
+
+- Fix mutliple parameter binding with hash
+
+## 1.9 2021-12-15
+
+- Add support for reading BLOBs
+
+## 1.8.2 2021-12-15
+
+- Add documentation
+
+## 1.7 2021-12-13
+
+- Add extralite Sequel adapter
+- Add support for binding hash parameters
+
+## 1.6 2021-12-13
+
+- Release GVL while fetching rows
+
+## 1.5 2021-12-13
+
+- Release GVL while preparing statements
+- Use `sqlite3_prepare_v2` instead of deprecated `sqlite_prepare`
+
+## 1.4 2021-08-25
+
+- Fix possible segfault in cleanup_stmt
+
+## 1.3 2021-08-17
+
+- Pin error classes (for better compatibility with `GC.compact`)
+
+## 1.2 2021-06-06
+
+- Add support for big integers
+
+## 1.1 2021-06-02
+
+- Add `#close`, `#closed?` methods
+
+## 1.0 2021-05-27
+
+- Refactor C code
+- Use `rb_ensure` to finalize stmt
+- Remove bundled `sqlite3.h`, use system-wide header file instead
+
+## 0.6 2021-05-25
+
+- Add more specific errors: `SQLError`, `BusyError`
+
+## 0.5 2021-05-25
+
+- Implement `Database#query_single_row`
+
+## 0.4 2021-05-24
+
+- Add support for loading extensions
+
+## 0.3 2021-05-24
+
+- Add support for running multiple statements
+
+## 0.2 2021-05-23
+
+- Implement `Database#transaction_active?`
+- Add tests
+
+## 0.1 2021-05-21
+
+- First release

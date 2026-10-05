@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Imports the compiled frontend from the reference Rails image: public/ (Propshaft
+# output, including gem-provided Turbo/Stimulus/Lexxy/Action Cable) and the
+# static stylesheet + importmap head block that every layout emits.
+#
+#   bin/import-assets [image] [reference-url-with-a-rendered-page]
+set -euo pipefail
+cd "$(dirname "$0")/.."
+image=${1:-campfire-reference:app}
+id=$(docker create "$image")
+trap 'docker rm "$id" >/dev/null' EXIT
+rm -rf public && mkdir public
+docker cp "$id:/rails/public/." public/
+if [ -n "${2:-}" ]; then
+  curl -s "$2" | awk '/<link rel="stylesheet"/{f=1} f{print} /<script type="module">import "application"<\/script>/{exit}' \
+    > app/views/layouts/_assets.html
+fi
+echo "imported $(ls public/assets | wc -l) assets"
