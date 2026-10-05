@@ -61,6 +61,11 @@ The Go numbers come from the Go/Rust/Ruby run; Rust and Ruby agreed within a few
 the two runs. Known weak spots: uploads (slower than Rails), cable p99 at 500+ clients (it varies
 between runs from tens to hundreds of milliseconds) and peak memory.
 
+**On Ruby master.** The same app on a build of ruby/ruby master ([`Dockerfile.head`](Dockerfile.head),
+[report](bench/results/ruby-head-zjit-20261005/report.md)) is 1.2× faster on the room page and 1.5× on the messages page. It
+delivers 1.6–2.2× more cable messages at 500–1,000 clients, and peaks at 723 MB instead of 1,247 MB. ZJIT
+(`bench/run-all --apps ruby-zjit`) works with Ractors and runs within 2–7% of YJIT.
+
 ## How it works
 
 An animated explainer, [`docs/explainer.html`](docs/explainer.html) (open it locally in a browser), walks through the architecture, the decisions and where the speed

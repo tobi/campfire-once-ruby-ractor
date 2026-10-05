@@ -10,7 +10,7 @@
     --surface-0: #f6f5f2; --surface-1: #fcfcfb; --surface-2: #efeee9; --line: #dad8d0;
     --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
     --ruby: #2a78d6; --rust: #eb6834; --go: #1baf7a; --rails: #eda100;
-    --accent: #2a78d6; --bad: #e34948; --good: #008300; --wait: #c3c2b7;
+    --accent: #2a78d6; --bad: #e34948; --good: #008300; --wait: #c3c2b7; --zjit: #e87ba4;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", "DejaVu Sans", sans-serif;
   }
@@ -20,7 +20,7 @@
       --surface-0: #121211; --surface-1: #1a1a19; --surface-2: #242422; --line: #3a3a37;
       --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
       --ruby: #3987e5; --rust: #d95926; --go: #199e70; --rails: #c98500;
-      --accent: #3987e5; --bad: #e66767; --good: #2fa84f; --wait: #55544f;
+      --accent: #3987e5; --bad: #e66767; --good: #2fa84f; --wait: #55544f; --zjit: #d55181;
     }
   }
   * { box-sizing: border-box; }
@@ -145,14 +145,29 @@
   </p>
   <cf-bench></cf-bench>
 
-  <h2><small>8 · Decisions</small>The trade-offs, written down</h2>
+  <h2><small>8 · Ruby head</small>The same code on ruby/ruby master</h2>
+  <p>
+    Same app, same harness, same CPUs: the release image against one built from
+    <a href="https://github.com/ruby/ruby/commit/df0fa43f5343f5ec18c63521592c36cde1092f7a">ruby/ruby master</a> (<code>Dockerfile.head</code>),
+    run once with YJIT and once with ZJIT, the new method-based JIT. No application changes. Pages where Ruby does most of the work gain the most (the messages page 1.5×). The sidebar,
+    which spends its time in zlib, barely moves. Peak memory drops by about 40%. Posts are bound by the single writer and don't move. ZJIT works with Ractors and runs within a few percent of YJIT.
+  </p>
+  <cf-head></cf-head>
+  <p class="muted" style="font-size:14px">
+    Medians of three interleaved reps (<code>bench/results/ruby-head-zjit-20261005</code>). Head's cold start is slower (2.9 s against 1.0 s), likely
+    from the Bundler 4.1 beta it ships with. Cable p99 swings between runs on every build, so read the throughput, not the tail. One trap on the way:
+    the first ZJIT run was really YJIT. Master's Bundler re-executed the server under the lockfile's older Bundler, which dropped the
+    <code>--zjit</code> flag, so the head image now sets <code>BUNDLE_VERSION=system</code>.
+  </p>
+
+  <h2><small>9 · Decisions</small>The trade-offs, written down</h2>
   <cf-decisions></cf-decisions>
 
-  <h2><small>9 · Not there yet</small>Where it still loses</h2>
+  <h2><small>10 · Not there yet</small>Where it still loses</h2>
   <cf-gaps></cf-gaps>
 
   <footer>
-    Data: <code>bench/results/rails-rust-ruby-20261005</code> and <code>bench/results/go-rust-ruby-20261005</code>
+    Data: <code>bench/results/rails-rust-ruby-20261005</code>, <code>bench/results/go-rust-ruby-20261005</code> and <code>bench/results/ruby-head-zjit-20261005</code>
     (October 5, 2026). The local before/after numbers come from development runs on the same machine. The writer and checkpoint animations
     are illustrative simulations; the latency numbers next to them are measured. Details are in <code>docs/PORTING.md</code>.
   </footer>
@@ -817,6 +832,78 @@ class Bench extends Visible {
 }
 customElements.define("cf-bench", Bench);
 
+/* ---------------------------------------------------------------- ruby head */
+const HEAD = {"http":{"room_show":{"1":{"ruby":{"rps":1654,"p50":0.585,"p99":1.253},"ruby-head":{"rps":1831,"p50":0.541,"p99":0.721},"ruby-zjit":{"rps":1767,"p50":0.561,"p99":0.743}},"16":{"ruby":{"rps":5168,"p50":2.891,"p99":5.867},"ruby-head":{"rps":6214,"p50":2.531,"p99":2.923},"ruby-zjit":{"rps":6051,"p50":2.601,"p99":2.973}},"64":{"ruby":{"rps":4943,"p50":12.407,"p99":23.535},"ruby-head":{"rps":5942,"p50":10.519,"p99":21.199},"ruby-zjit":{"rps":5740,"p50":10.903,"p99":21.407}}},"messages_page":{"1":{"ruby":{"rps":3015,"p50":0.312,"p99":0.746},"ruby-head":{"rps":3492,"p50":0.277,"p99":0.407},"ruby-zjit":{"rps":3402,"p50":0.284,"p99":0.404}},"16":{"ruby":{"rps":8492,"p50":1.618,"p99":4.819},"ruby-head":{"rps":12749,"p50":1.131,"p99":2.009},"ruby-zjit":{"rps":12045,"p50":1.331,"p99":1.815}},"64":{"ruby":{"rps":8065,"p50":8.463,"p99":18.303},"ruby-head":{"rps":12068,"p50":5.075,"p99":6.839},"ruby-zjit":{"rps":11218,"p50":5.675,"p99":6.667}}},"sidebar":{"1":{"ruby":{"rps":2057,"p50":0.478,"p99":0.732},"ruby-head":{"rps":2047,"p50":0.486,"p99":0.612},"ruby-zjit":{"rps":2041,"p50":0.487,"p99":0.61}},"16":{"ruby":{"rps":7184,"p50":2.133,"p99":3.803},"ruby-head":{"rps":7414,"p50":2.073,"p99":3.629},"ruby-zjit":{"rps":7503,"p50":2.571,"p99":3.923}},"64":{"ruby":{"rps":7133,"p50":8.823,"p99":12.375},"ruby-head":{"rps":7237,"p50":8.439,"p99":11.271},"ruby-zjit":{"rps":7340,"p50":7.927,"p99":12.295}}},"search":{"1":{"ruby":{"rps":2178,"p50":0.444,"p99":0.749},"ruby-head":{"rps":2330,"p50":0.422,"p99":0.546},"ruby-zjit":{"rps":2317,"p50":0.424,"p99":0.564}},"16":{"ruby":{"rps":6947,"p50":2.461,"p99":7.323},"ruby-head":{"rps":8169,"p50":1.88,"p99":2.673},"ruby-zjit":{"rps":8148,"p50":1.909,"p99":3.613}},"64":{"ruby":{"rps":6638,"p50":9.351,"p99":17.391},"ruby-head":{"rps":7956,"p50":7.447,"p99":18.815},"ruby-zjit":{"rps":7896,"p50":8.423,"p99":19.695}}},"avatar":{"1":{"ruby":{"rps":19469,"p50":0.049,"p99":0.099},"ruby-head":{"rps":19334,"p50":0.048,"p99":0.102},"ruby-zjit":{"rps":18899,"p50":0.05,"p99":0.115}},"16":{"ruby":{"rps":92457,"p50":0.129,"p99":1.148},"ruby-head":{"rps":109642,"p50":0.147,"p99":0.253},"ruby-zjit":{"rps":112202,"p50":0.128,"p99":0.281}},"64":{"ruby":{"rps":98093,"p50":0.559,"p99":2.197},"ruby-head":{"rps":116078,"p50":0.538,"p99":0.738},"ruby-zjit":{"rps":112562,"p50":0.578,"p99":0.767}}},"static_css":{"1":{"ruby":{"rps":21632,"p50":0.044,"p99":0.088},"ruby-head":{"rps":22193,"p50":0.043,"p99":0.103},"ruby-zjit":{"rps":21539,"p50":0.044,"p99":0.112}},"16":{"ruby":{"rps":111897,"p50":0.111,"p99":0.567},"ruby-head":{"rps":131632,"p50":0.107,"p99":0.219},"ruby-zjit":{"rps":134820,"p50":0.106,"p99":0.253}},"64":{"ruby":{"rps":110441,"p50":0.495,"p99":2.145},"ruby-head":{"rps":134312,"p50":0.468,"p99":0.785},"ruby-zjit":{"rps":128223,"p50":0.475,"p99":0.737}}},"up":{"1":{"ruby":{"rps":13469,"p50":0.072,"p99":0.157},"ruby-head":{"rps":13143,"p50":0.072,"p99":0.136},"ruby-zjit":{"rps":12849,"p50":0.075,"p99":0.149}},"16":{"ruby":{"rps":61591,"p50":0.217,"p99":1.554},"ruby-head":{"rps":70998,"p50":0.213,"p99":0.406},"ruby-zjit":{"rps":68527,"p50":0.252,"p99":0.44}},"64":{"ruby":{"rps":60555,"p50":0.964,"p99":3.077},"ruby-head":{"rps":67898,"p50":0.914,"p99":1.325},"ruby-zjit":{"rps":67084,"p50":0.95,"p99":1.308}}},"post_message":{"1":{"ruby":{"rps":1018,"p50":0.866,"p99":3.221},"ruby-head":{"rps":1052,"p50":0.842,"p99":1.937},"ruby-zjit":{"rps":1024,"p50":0.861,"p99":2.285}},"16":{"ruby":{"rps":1773,"p50":8.043,"p99":34.943},"ruby-head":{"rps":1852,"p50":7.439,"p99":35.807},"ruby-zjit":{"rps":1841,"p50":8.567,"p99":35.743}},"64":{"ruby":{"rps":1727,"p50":31.407,"p99":104.383},"ruby-head":{"rps":1811,"p50":32.159,"p99":88.511},"ruby-zjit":{"rps":1685,"p50":33.023,"p99":93.183}}}},"cable":[{"clients":100,"ruby":{"tput":1089,"p50":5.483,"p99":13.551},"ruby-head":{"tput":1245,"p50":5.803,"p99":118.911},"ruby-zjit":{"tput":1232,"p50":5.455,"p99":582.143}},{"clients":500,"ruby":{"tput":285,"p50":11.191,"p99":23.727},"ruby-head":{"tput":456,"p50":8.935,"p99":14.991},"ruby-zjit":{"tput":421,"p50":9.647,"p99":15.495}},{"clients":1000,"ruby":{"tput":115,"p50":16.591,"p99":56.223},"ruby-head":{"tput":258,"p50":14.391,"p99":67.263},"ruby-zjit":{"tput":231,"p50":13.383,"p99":74.815}}],"proc":{"ruby":{"cold":1042,"upload":239.0,"peak":1247,"idle":64},"ruby-head":{"cold":2899,"upload":244.0,"peak":723,"idle":65},"ruby-zjit":{"cold":2857,"upload":243.2,"peak":703,"idle":71}}};
+const VARIANTS = [
+  { key: "ruby", name: "4.0.7 · YJIT", color: "var(--wait)" },
+  { key: "ruby-head", name: "head · YJIT", color: "var(--ruby)" },
+  { key: "ruby-zjit", name: "head · ZJIT", color: "var(--zjit)" },
+];
+class Head extends Visible {
+  static properties = { conc: {}, table: {}, tip: {}, on: {} };
+  static styles = [base, css`
+    .multi { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px 28px; margin-top: 18px; }
+    h4 { margin: 0 0 8px; font-size: 14px; display: flex; justify-content: space-between; }
+    h4 span { font-weight: 500; color: var(--text-muted); font-size: 12px; }
+    .b { display: grid; grid-template-columns: 88px 1fr; align-items: center; gap: 6px; height: 24px; position: relative; }
+    .n { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .track { position: relative; height: 18px; }
+    .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; transition: width .9s cubic-bezier(.2,.8,.2,1); }
+    .val { position: absolute; top: 1px; font-size: 11.5px; color: var(--text-primary); white-space: nowrap; transition: left .9s cubic-bezier(.2,.8,.2,1); }
+    .val i { font-style: normal; color: var(--text-muted); }
+    .hit { position: absolute; inset: -3px 0; }
+    .tip { position: fixed; pointer-events: none; background: var(--text-primary); color: var(--surface-1); padding: 8px 10px; border-radius: 8px; font-size: 12px; z-index: 5; white-space: pre; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+    .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 14px; }
+    th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--text-muted); font-weight: 600; }
+    h3 { font-size: 16px; margin: 34px 0 6px; }
+  `];
+  constructor() { super(); this.conc = 16; this.table = false; this.tip = null; this.on = false; }
+  visibleChanged(v) { if (v) setTimeout(() => (this.on = true), 80); }
+  bar(v, val, max, base, label, tip, lowerBetter = false) {
+    const w = this.on ? Math.max(0.6, val / max * 64) : 0;
+    const r = val / base;
+    const ratio = v.key === "ruby" ? "" : lowerBetter ? ` · ${r <= 1 ? (1 / r).toFixed(1) + "× lower" : r.toFixed(1) + "× higher"}` : ` · ${r.toFixed(2)}×`;
+    return html`<div class="b"><div class="n">${v.name}</div><div class="track">
+      <div class="fill" style="width:${w}%;background:${v.color}"></div>
+      <div class="val" style="left:calc(${w}% + 6px)">${label}<i>${ratio}</i></div>
+      <div class="hit" @mousemove=${(e) => (this.tip = { x: e.clientX, y: e.clientY, t: tip })} @mouseleave=${() => (this.tip = null)}></div>
+    </div></div>`;
+  }
+  group(title, note, get, unit, lowerBetter = false, tipOf = () => "") {
+    const vals = VARIANTS.map((v) => get(v.key)), max = Math.max(...vals);
+    return html`<div><h4>${title}<span>${note}</span></h4>${VARIANTS.map((v, i) =>
+      this.bar(v, vals[i], max, vals[0], `${fmt(vals[i])} ${unit}`, `${v.name} · ${title}\n${fmt(vals[i])} ${unit}${tipOf(v.key)}`, lowerBetter))}</div>`;
+  }
+  render() {
+    const h = HEAD.http, c = this.conc;
+    const legend = html`<div class="legend">${VARIANTS.map((v) => html`<span><i class="sw" style="background:${v.color}"></i>${v.name}</span>`)}</div>`;
+    return html`<div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="row">${[1, 16, 64].map((k) => html`<button class="seg" aria-pressed=${c === k} @click=${() => (this.conc = k)}>${k} client${k > 1 ? "s" : ""}</button>`)}</div>
+        <div class="row">${legend}<button class="seg" aria-pressed=${this.table} @click=${() => (this.table = !this.table)}>Table</button></div>
+      </div>
+      ${this.table ? html`<table><tr><th>Route, ${c} clients</th>${VARIANTS.map((v) => html`<th>${v.name} req/s</th><th>p99 ms</th>`)}</tr>
+        ${ROUTES.map(([r, label]) => html`<tr><td>${label}</td>${VARIANTS.map((v) => html`<td>${fmt(h[r][c][v.key].rps)}</td><td>${fmt(h[r][c][v.key].p99)}</td>`)}</tr>`)}
+        ${HEAD.cable.map((row) => html`<tr><td>Cable, ${row.clients} clients (msg/s, p99)</td>${VARIANTS.map((v) => html`<td>${fmt(row[v.key].tput)}</td><td>${fmt(row[v.key].p99)}</td>`)}</tr>`)}
+        <tr><td>Peak memory (MB)</td>${VARIANTS.map((v) => html`<td>${fmt(HEAD.proc[v.key].peak)}</td><td></td>`)}</tr></table>`
+      : html`<div class="multi">${ROUTES.map(([r, label]) => this.group(label, `${c} clients`, (k) => h[r][c][k].rps, "req/s", false,
+          (k) => ` · p50 ${fmt(h[r][c][k].p50)} ms · p99 ${fmt(h[r][c][k].p99)} ms`))}</div>
+      <h3>Action Cable and memory</h3>
+      <div class="muted">Messages delivered per second to N subscribers in one room (p99 is in the tooltip and the table), and the container's peak memory across the run, where shorter is better.</div>
+      <div class="multi">
+        ${HEAD.cable.map((row) => this.group(`Cable, ${row.clients.toLocaleString()} clients`, "msg/s", (k) => row[k].tput, "msg/s", false, (k) => ` · p50 ${fmt(row[k].p50)} ms · p99 ${fmt(row[k].p99)} ms`))}
+        ${this.group("Peak container memory", "MB", (k) => HEAD.proc[k].peak, "MB", true)}
+      </div>`}
+      ${this.tip ? html`<div class="tip" style="left:${this.tip.x + 14}px;top:${this.tip.y + 14}px">${this.tip.t}</div>` : nothing}
+    </div>`;
+  }
+}
+customElements.define("cf-head", Head);
+
 /* ---------------------------------------------------------------- decisions */
 const DECISIONS = [
   ["Ractors in one process, not forked workers",
@@ -868,10 +955,10 @@ class Gaps extends LitElement {
   render() {
     const p = DATA.proc, h = DATA.http, cb = DATA.cable;
     return html`<div class="card"><ul>
-      <li><strong>Rust is still ${(h.room_show[16].rust.rps / h.room_show[16].ruby.rps).toFixed(1)}× faster on the room page</strong>, and ${(h.messages_page[16].rust.rps / h.messages_page[16].ruby.rps).toFixed(1)}–${(h.search[16].rust.rps / h.search[16].ruby.rps).toFixed(1)}× on the other pages. What's left is mostly Ruby's own CPU time for rendering and request handling.</li>
+      <li><strong>Rust is still ${(h.room_show[16].rust.rps / h.room_show[16].ruby.rps).toFixed(1)}× faster on the room page</strong>, and ${(h.messages_page[16].rust.rps / h.messages_page[16].ruby.rps).toFixed(1)}–${(h.search[16].rust.rps / h.search[16].ruby.rps).toFixed(1)}× on the other pages. What's left is mostly Ruby's own CPU time for rendering and request handling. Ruby head closes some of it: ${(h.room_show[16].rust.rps / HEAD.http.room_show[16]["ruby-head"].rps).toFixed(1)}× on the room page.</li>
       <li><strong>Uploads: ${fmt(p.ruby.upload)} ms vs Rails ${fmt(p.rails.upload)} ms.</strong> This is the one place it loses to Rails, and it hasn't been profiled yet.</li>
       <li><strong>Cable p99 at ${cb[1].clients}+ clients</strong> ranges from tens to hundreds of milliseconds between runs (median ${fmt(cb[1].ruby.p99)} ms vs Rust ${fmt(cb[1].rust.p99)} ms). That looks like stalls (GC marking about 1,000 fiber stacks, socket writes), not lack of throughput.</li>
-      <li><strong>Memory: ${fmt(p.ruby.peak)} MB peak</strong>, versus Rust's ${fmt(p.rust.peak)} MB: per-Ractor heaps and caches.</li>
+      <li><strong>Memory: ${fmt(p.ruby.peak)} MB peak</strong> on 4.0.7, versus Rust's ${fmt(p.rust.peak)} MB: per-Ractor heaps and caches. Ruby head brings it down to ${fmt(HEAD.proc["ruby-head"].peak)} MB.</li>
       <li><strong>Not production-hardened:</strong> no TLS front server, no backup hooks, and jobs are lost on a crash.</li>
     </ul></div>`;
   }

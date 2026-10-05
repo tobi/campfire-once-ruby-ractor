@@ -1,6 +1,8 @@
 # syntax = docker/dockerfile:1
 #
 # The production image (Dockerfile) on Ruby built from ruby/ruby master instead of a release.
+# BUNDLE_VERSION=system keeps the Bundler that ships with master: otherwise it re-execs
+# bin/campfire under the lockfile's Bundler, dropping the JIT flag bin/boot passed.
 #
 #   docker build -f Dockerfile.head --build-arg RUBY_REF=<sha> -t campfire-ruby:head .
 
@@ -20,7 +22,8 @@ RUN git clone --filter=blob:none https://github.com/ruby/ruby /src/ruby && cd /s
 FROM docker.io/library/debian:trixie-slim AS base
 WORKDIR /rails
 ENV BUNDLE_DEPLOYMENT=1 BUNDLE_PATH=/usr/local/bundle BUNDLE_WITHOUT=development:test \
-    GEM_HOME=/usr/local/bundle LANG=C.UTF-8 TZ=UTC PATH=/usr/local/bundle/bin:$PATH
+    GEM_HOME=/usr/local/bundle LANG=C.UTF-8 TZ=UTC PATH=/usr/local/bundle/bin:$PATH \
+    BUNDLE_VERSION=system
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y libsqlite3-0 libvips-tools ffmpeg libjemalloc2 curl \
       libssl3t64 libyaml-0-2 libffi8 zlib1g libgmp10 libreadline8t64 ca-certificates && \
