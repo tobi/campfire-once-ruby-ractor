@@ -29,10 +29,17 @@ module Campfire
           Campfire::Server.work(fds, url, index)
         end
       end
-      Log.info "campfire: #{config.workers} ractors listening on #{url} (#{RUBY_DESCRIPTION})"
+      Log.info "campfire: #{config.workers} ractors listening on #{url}, JIT: #{jit} (#{RUBY_DESCRIPTION})"
+      Log.flush # the main Ractor has no flush timer and blocks in join below
 
       %w[INT TERM].each { |sig| trap(sig) { exit!(0) } }
       workers.each(&:join)
+    end
+
+    def jit
+      return "ZJIT" if defined?(RubyVM::ZJIT) && RubyVM::ZJIT.enabled?
+      return "YJIT" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+      "none"
     end
 
     # Every cable client holds a socket. The usual soft limit (1024) let ~1000 clients
