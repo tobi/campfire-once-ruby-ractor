@@ -1,0 +1,1526 @@
+{
+ "app": "reference",
+ "rep": 2,
+ "cold_start_ms": 5029,
+ "memory": {
+  "idle_current_mb": 522,
+  "idle_anon_mb": 377,
+  "peak_current_mb": 1526,
+  "peak_anon_mb": 1355,
+  "cgroup_peak_mb": 1528
+ },
+ "http": [
+  {
+   "avg_bytes": 44333,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 92.351,
+    "mean_ms": 12.35,
+    "n": 648,
+    "p50_ms": 11.143,
+    "p90_ms": 13.335,
+    "p99_ms": 29.343
+   },
+   "ok": 648,
+   "path": "/rooms/486777696",
+   "rps": 80.9,
+   "secs": 8.01,
+   "statuses": {
+    "200": 648
+   },
+   "route": "room_show"
+  },
+  {
+   "avg_bytes": 44333,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 251.903,
+    "mean_ms": 82.24,
+    "n": 1563,
+    "p50_ms": 86.079,
+    "p90_ms": 135.679,
+    "p99_ms": 203.519
+   },
+   "ok": 1563,
+   "path": "/rooms/486777696",
+   "rps": 193.7,
+   "secs": 8.07,
+   "statuses": {
+    "200": 1563
+   },
+   "route": "room_show"
+  },
+  {
+   "avg_bytes": 44333,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 514.559,
+    "mean_ms": 335.55,
+    "n": 1556,
+    "p50_ms": 386.047,
+    "p90_ms": 455.423,
+    "p99_ms": 494.847
+   },
+   "ok": 1556,
+   "path": "/rooms/486777696",
+   "rps": 187.0,
+   "secs": 8.32,
+   "statuses": {
+    "200": 1556
+   },
+   "route": "room_show"
+  },
+  {
+   "avg_bytes": 34888,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 19.807,
+    "mean_ms": 6.55,
+    "n": 1220,
+    "p50_ms": 6.151,
+    "p90_ms": 7.219,
+    "p99_ms": 14.775
+   },
+   "ok": 1220,
+   "path": "/rooms/486777696/messages?before=933434569",
+   "rps": 152.4,
+   "secs": 8.0,
+   "statuses": {
+    "200": 1220
+   },
+   "route": "messages_page"
+  },
+  {
+   "avg_bytes": 34888,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 135.167,
+    "mean_ms": 46.0,
+    "n": 2790,
+    "p50_ms": 47.167,
+    "p90_ms": 82.687,
+    "p99_ms": 101.055
+   },
+   "ok": 2790,
+   "path": "/rooms/486777696/messages?before=933434569",
+   "rps": 347.1,
+   "secs": 8.04,
+   "statuses": {
+    "200": 2790
+   },
+   "route": "messages_page"
+  },
+  {
+   "avg_bytes": 34888,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 296.191,
+    "mean_ms": 197.72,
+    "n": 2620,
+    "p50_ms": 196.863,
+    "p90_ms": 234.239,
+    "p99_ms": 269.055
+   },
+   "ok": 2620,
+   "path": "/rooms/486777696/messages?before=933434569",
+   "rps": 320.4,
+   "secs": 8.18,
+   "statuses": {
+    "200": 2620
+   },
+   "route": "messages_page"
+  },
+  {
+   "avg_bytes": 6267,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 7.851,
+    "mean_ms": 5.04,
+    "n": 1586,
+    "p50_ms": 4.955,
+    "p90_ms": 5.715,
+    "p99_ms": 6.751
+   },
+   "ok": 1586,
+   "path": "/users/me/sidebar",
+   "rps": 198.2,
+   "secs": 8.0,
+   "statuses": {
+    "200": 1586
+   },
+   "route": "sidebar"
+  },
+  {
+   "avg_bytes": 6267,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 83.455,
+    "mean_ms": 32.62,
+    "n": 3930,
+    "p50_ms": 31.951,
+    "p90_ms": 45.183,
+    "p99_ms": 59.775
+   },
+   "ok": 3930,
+   "path": "/users/me/sidebar",
+   "rps": 489.8,
+   "secs": 8.02,
+   "statuses": {
+    "200": 3930
+   },
+   "route": "sidebar"
+  },
+  {
+   "avg_bytes": 6267,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 234.623,
+    "mean_ms": 130.54,
+    "n": 3951,
+    "p50_ms": 130.559,
+    "p90_ms": 155.263,
+    "p99_ms": 199.423
+   },
+   "ok": 3951,
+   "path": "/users/me/sidebar",
+   "rps": 485.9,
+   "secs": 8.13,
+   "statuses": {
+    "200": 3951
+   },
+   "route": "sidebar"
+  },
+  {
+   "avg_bytes": 17522,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 10.431,
+    "mean_ms": 6.79,
+    "n": 1178,
+    "p50_ms": 6.703,
+    "p90_ms": 7.515,
+    "p99_ms": 8.727
+   },
+   "ok": 1178,
+   "path": "/searches?q=coffee",
+   "rps": 147.2,
+   "secs": 8.0,
+   "statuses": {
+    "200": 1178
+   },
+   "route": "search"
+  },
+  {
+   "avg_bytes": 17522,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 101.247,
+    "mean_ms": 47.84,
+    "n": 2681,
+    "p50_ms": 45.503,
+    "p90_ms": 72.639,
+    "p99_ms": 87.679
+   },
+   "ok": 2681,
+   "path": "/searches?q=coffee",
+   "rps": 333.7,
+   "secs": 8.03,
+   "statuses": {
+    "200": 2681
+   },
+   "route": "search"
+  },
+  {
+   "avg_bytes": 17522,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 281.599,
+    "mean_ms": 193.47,
+    "n": 2678,
+    "p50_ms": 193.407,
+    "p90_ms": 219.903,
+    "p99_ms": 240.127
+   },
+   "ok": 2678,
+   "path": "/searches?q=coffee",
+   "rps": 327.1,
+   "secs": 8.19,
+   "statuses": {
+    "200": 2678
+   },
+   "route": "search"
+  },
+  {
+   "avg_bytes": 3360,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 4.551,
+    "mean_ms": 0.07,
+    "n": 119182,
+    "p50_ms": 0.062,
+    "p90_ms": 0.073,
+    "p99_ms": 0.139
+   },
+   "ok": 119182,
+   "path": "/users/eyJfcmFpbHMiOnsiZGF0YSI6MTQ5MDg3NjU5LCJwdXIiOiJ1c2VyL2F2YXRhciJ9fQ--3717de512c048bb2a011a08236969887ee56ae9f8bd2fb510959b9915f449e17/avatar",
+   "rps": 14897.6,
+   "secs": 8.0,
+   "statuses": {
+    "200": 119182
+   },
+   "route": "avatar"
+  },
+  {
+   "avg_bytes": 3360,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 6.295,
+    "mean_ms": 0.23,
+    "n": 561871,
+    "p50_ms": 0.166,
+    "p90_ms": 0.465,
+    "p99_ms": 0.898
+   },
+   "ok": 561871,
+   "path": "/users/eyJfcmFpbHMiOnsiZGF0YSI6MTQ5MDg3NjU5LCJwdXIiOiJ1c2VyL2F2YXRhciJ9fQ--3717de512c048bb2a011a08236969887ee56ae9f8bd2fb510959b9915f449e17/avatar",
+   "rps": 70230.0,
+   "secs": 8.0,
+   "statuses": {
+    "200": 561871
+   },
+   "route": "avatar"
+  },
+  {
+   "avg_bytes": 3360,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 19.007,
+    "mean_ms": 1.1,
+    "n": 464727,
+    "p50_ms": 0.629,
+    "p90_ms": 2.837,
+    "p99_ms": 6.003
+   },
+   "ok": 464727,
+   "path": "/users/eyJfcmFpbHMiOnsiZGF0YSI6MTQ5MDg3NjU5LCJwdXIiOiJ1c2VyL2F2YXRhciJ9fQ--3717de512c048bb2a011a08236969887ee56ae9f8bd2fb510959b9915f449e17/avatar",
+   "rps": 58079.3,
+   "secs": 8.0,
+   "statuses": {
+    "200": 464727
+   },
+   "route": "avatar"
+  },
+  {
+   "avg_bytes": 653,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 4.639,
+    "mean_ms": 0.05,
+    "n": 148911,
+    "p50_ms": 0.05,
+    "p90_ms": 0.061,
+    "p99_ms": 0.097
+   },
+   "ok": 148911,
+   "path": "/assets/_reset-9c3efd7b.css",
+   "rps": 18613.6,
+   "secs": 8.0,
+   "statuses": {
+    "200": 148911
+   },
+   "route": "static_css"
+  },
+  {
+   "avg_bytes": 653,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 17.039,
+    "mean_ms": 0.19,
+    "n": 678966,
+    "p50_ms": 0.14,
+    "p90_ms": 0.361,
+    "p99_ms": 0.752
+   },
+   "ok": 678966,
+   "path": "/assets/_reset-9c3efd7b.css",
+   "rps": 84866.7,
+   "secs": 8.0,
+   "statuses": {
+    "200": 678966
+   },
+   "route": "static_css"
+  },
+  {
+   "avg_bytes": 653,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 11.935,
+    "mean_ms": 0.84,
+    "n": 607487,
+    "p50_ms": 0.547,
+    "p90_ms": 1.921,
+    "p99_ms": 4.223
+   },
+   "ok": 607487,
+   "path": "/assets/_reset-9c3efd7b.css",
+   "rps": 75923.6,
+   "secs": 8.0,
+   "statuses": {
+    "200": 607487
+   },
+   "route": "static_css"
+  },
+  {
+   "avg_bytes": 88,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 3.503,
+    "mean_ms": 0.61,
+    "n": 13193,
+    "p50_ms": 0.575,
+    "p90_ms": 0.702,
+    "p99_ms": 1.028
+   },
+   "ok": 13193,
+   "path": "/up",
+   "rps": 1649.1,
+   "secs": 8.0,
+   "statuses": {
+    "200": 13193
+   },
+   "route": "up"
+  },
+  {
+   "avg_bytes": 88,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 23.983,
+    "mean_ms": 4.65,
+    "n": 27531,
+    "p50_ms": 4.447,
+    "p90_ms": 6.683,
+    "p99_ms": 9.879
+   },
+   "ok": 27531,
+   "path": "/up",
+   "rps": 3439.4,
+   "secs": 8.0,
+   "statuses": {
+    "200": 27531
+   },
+   "route": "up"
+  },
+  {
+   "avg_bytes": 88,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 54.495,
+    "mean_ms": 18.4,
+    "n": 27852,
+    "p50_ms": 18.239,
+    "p90_ms": 23.935,
+    "p99_ms": 30.463
+   },
+   "ok": 27852,
+   "path": "/up",
+   "rps": 3473.4,
+   "secs": 8.02,
+   "statuses": {
+    "200": 27852
+   },
+   "route": "up"
+  },
+  {
+   "avg_bytes": 2002,
+   "conc": 1,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 42.975,
+    "mean_ms": 7.74,
+    "n": 1033,
+    "p50_ms": 7.179,
+    "p90_ms": 8.687,
+    "p99_ms": 25.375
+   },
+   "ok": 1033,
+   "path": "POST /rooms/201306877/messages",
+   "rps": 129.1,
+   "secs": 8.0,
+   "statuses": {
+    "200": 1033
+   },
+   "route": "post_message"
+  },
+  {
+   "avg_bytes": 2002,
+   "conc": 16,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 2758.655,
+    "mean_ms": 79.32,
+    "n": 1817,
+    "p50_ms": 66.815,
+    "p90_ms": 127.615,
+    "p99_ms": 213.631
+   },
+   "ok": 1817,
+   "path": "POST /rooms/201306877/messages",
+   "rps": 176.5,
+   "secs": 10.29,
+   "statuses": {
+    "200": 1817
+   },
+   "route": "post_message"
+  },
+  {
+   "avg_bytes": 2002,
+   "conc": 64,
+   "errors": 0,
+   "gzip": true,
+   "latency": {
+    "max_ms": 471.807,
+    "mean_ms": 276.26,
+    "n": 1881,
+    "p50_ms": 272.383,
+    "p90_ms": 342.783,
+    "p99_ms": 409.599
+   },
+   "ok": 1881,
+   "path": "POST /rooms/201306877/messages",
+   "rps": 228.9,
+   "secs": 8.22,
+   "statuses": {
+    "200": 1881
+   },
+   "route": "post_message"
+  }
+ ],
+ "cable": [
+  {
+   "clients": 100,
+   "connect_secs": 0.27,
+   "failed": 0,
+   "latency": {
+    "all_clients": {
+     "max_ms": 62.399,
+     "mean_ms": 26.59,
+     "n": 30,
+     "p50_ms": 20.863,
+     "p90_ms": 56.735,
+     "p99_ms": 62.399
+    },
+    "complete": 30,
+    "messages": 30,
+    "per_client": {
+     "max_ms": 62.399,
+     "mean_ms": 17.16,
+     "n": 3000,
+     "p50_ms": 15.527,
+     "p90_ms": 23.903,
+     "p99_ms": 52.479
+    },
+    "post": {
+     "max_ms": 71.615,
+     "mean_ms": 24.45,
+     "n": 30,
+     "p50_ms": 20.607,
+     "p90_ms": 28.591,
+     "p99_ms": 71.615
+    }
+   },
+   "ready": 100,
+   "subscriptions_per_client": 6,
+   "throughput": {
+    "all_clients": {
+     "max_ms": 219.135,
+     "mean_ms": 62.87,
+     "n": 1133,
+     "p50_ms": 61.311,
+     "p90_ms": 92.159,
+     "p99_ms": 127.359
+    },
+    "complete": 1133,
+    "delivered_msgs_per_sec": 75.2,
+    "drain_secs": 0.02,
+    "frames_per_sec": 7518.0,
+    "per_client": {
+     "max_ms": 219.135,
+     "mean_ms": 40.07,
+     "n": 113300,
+     "p50_ms": 36.447,
+     "p90_ms": 65.535,
+     "p99_ms": 101.183
+    },
+    "post": {
+     "max_ms": 243.711,
+     "mean_ms": 53.08,
+     "n": 1133,
+     "p50_ms": 46.783,
+     "p90_ms": 90.239,
+     "p99_ms": 135.551
+    },
+    "posted": 1133,
+    "posters": 4,
+    "posts_per_sec": 75.3,
+    "wire_mb_per_sec": 0.0
+   },
+   "process_memory": {
+    "connect": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 17.5,
+       "peak_anon_mb": 10.9,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 18.2,
+       "peak_anon_mb": 14.8,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 264.8,
+       "peak_anon_mb": 382.4,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 541.2,
+       "peak_anon_mb": 686.6,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 852.2
+    },
+    "connected": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 18.2,
+       "peak_anon_mb": 11.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 18.2,
+       "peak_anon_mb": 14.8,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 264.8,
+       "peak_anon_mb": 382.4,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 551.6,
+       "peak_anon_mb": 695.7,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 863.3
+    },
+    "paced": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 19.2,
+       "peak_anon_mb": 12.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 18.4,
+       "peak_anon_mb": 15.0,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.4,
+       "peak_anon_mb": 383.0,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 611.1,
+       "peak_anon_mb": 754.4,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 924.4
+    },
+    "paced_drained": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 19.2,
+       "peak_anon_mb": 12.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 18.4,
+       "peak_anon_mb": 15.0,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.3,
+       "peak_anon_mb": 382.8,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 611.1,
+       "peak_anon_mb": 754.4,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 924.4
+    },
+    "saturated": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 27.3,
+       "peak_anon_mb": 20.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.7,
+       "peak_anon_mb": 17.3,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 266.3,
+       "peak_anon_mb": 383.9,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 710.5,
+       "peak_anon_mb": 853.6,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1034.4
+    },
+    "saturated_posted": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 27.3,
+       "peak_anon_mb": 20.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.7,
+       "peak_anon_mb": 17.3,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 266.1,
+       "peak_anon_mb": 383.6,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 705.9,
+       "peak_anon_mb": 849.0,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1030.4
+    },
+    "saturated_drained": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 27.3,
+       "peak_anon_mb": 20.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.7,
+       "peak_anon_mb": 17.3,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 266.1,
+       "peak_anon_mb": 383.6,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 705.9,
+       "peak_anon_mb": 849.0,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1030.4
+    },
+    "done": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 27.3,
+       "peak_anon_mb": 20.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.7,
+       "peak_anon_mb": 17.4,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 266.1,
+       "peak_anon_mb": 383.6,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 706.5,
+       "peak_anon_mb": 849.3,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1031.1
+    }
+   }
+  },
+  {
+   "clients": 500,
+   "connect_secs": 0.85,
+   "failed": 0,
+   "latency": {
+    "all_clients": {
+     "max_ms": 130.943,
+     "mean_ms": 59.48,
+     "n": 30,
+     "p50_ms": 53.631,
+     "p90_ms": 68.543,
+     "p99_ms": 130.943
+    },
+    "complete": 30,
+    "messages": 30,
+    "per_client": {
+     "max_ms": 130.943,
+     "mean_ms": 29.33,
+     "n": 15000,
+     "p50_ms": 27.023,
+     "p90_ms": 45.471,
+     "p99_ms": 98.175
+    },
+    "post": {
+     "max_ms": 119.295,
+     "mean_ms": 57.23,
+     "n": 30,
+     "p50_ms": 53.631,
+     "p90_ms": 62.911,
+     "p99_ms": 119.295
+    }
+   },
+   "ready": 500,
+   "subscriptions_per_client": 6,
+   "throughput": {
+    "all_clients": {
+     "max_ms": 465.663,
+     "mean_ms": 157.73,
+     "n": 335,
+     "p50_ms": 142.591,
+     "p90_ms": 251.647,
+     "p99_ms": 373.759
+    },
+    "complete": 335,
+    "delivered_msgs_per_sec": 22.1,
+    "drain_secs": 0.0,
+    "frames_per_sec": 11071.0,
+    "per_client": {
+     "max_ms": 465.663,
+     "mean_ms": 111.42,
+     "n": 167500,
+     "p50_ms": 98.751,
+     "p90_ms": 210.431,
+     "p99_ms": 317.183
+    },
+    "post": {
+     "max_ms": 570.367,
+     "mean_ms": 180.14,
+     "n": 335,
+     "p50_ms": 159.103,
+     "p90_ms": 310.783,
+     "p99_ms": 522.239
+    },
+    "posted": 335,
+    "posters": 4,
+    "posts_per_sec": 22.1,
+    "wire_mb_per_sec": 0.0
+   },
+   "process_memory": {
+    "connect": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 44.5,
+       "peak_anon_mb": 37.8,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.7,
+       "peak_anon_mb": 17.4,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.9,
+       "peak_anon_mb": 383.5,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 685.5,
+       "peak_anon_mb": 828.3,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1009.9
+    },
+    "connected": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 47.5,
+       "peak_anon_mb": 40.8,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.7,
+       "peak_anon_mb": 17.4,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.9,
+       "peak_anon_mb": 383.5,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 646.7,
+       "peak_anon_mb": 789.4,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 988.3
+    },
+    "paced": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 50.8,
+       "peak_anon_mb": 44.1,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.8,
+       "peak_anon_mb": 17.4,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.9,
+       "peak_anon_mb": 383.5,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 739.7,
+       "peak_anon_mb": 881.8,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1087.5
+    },
+    "paced_drained": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 50.8,
+       "peak_anon_mb": 44.1,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 20.8,
+       "peak_anon_mb": 17.4,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.6,
+       "peak_anon_mb": 383.2,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 734.2,
+       "peak_anon_mb": 876.3,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1081.9
+    },
+    "saturated": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 55.8,
+       "peak_anon_mb": 49.1,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.5,
+       "peak_anon_mb": 18.1,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.9,
+       "peak_anon_mb": 383.4,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 805.5,
+       "peak_anon_mb": 947.9,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1154.4
+    },
+    "saturated_posted": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 55.8,
+       "peak_anon_mb": 49.1,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.5,
+       "peak_anon_mb": 18.1,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.5,
+       "peak_anon_mb": 383.1,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 793.9,
+       "peak_anon_mb": 936.2,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1147.2
+    },
+    "saturated_drained": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 55.8,
+       "peak_anon_mb": 49.1,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.5,
+       "peak_anon_mb": 18.1,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.5,
+       "peak_anon_mb": 383.1,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 793.9,
+       "peak_anon_mb": 936.2,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1147.2
+    },
+    "done": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 56.1,
+       "peak_anon_mb": 49.4,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.5,
+       "peak_anon_mb": 18.1,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.6,
+       "peak_anon_mb": 383.1,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 793.9,
+       "peak_anon_mb": 936.2,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1147.2
+    }
+   }
+  },
+  {
+   "clients": 1000,
+   "connect_secs": 1.57,
+   "failed": 0,
+   "latency": {
+    "all_clients": {
+     "max_ms": 201.087,
+     "mean_ms": 104.97,
+     "n": 30,
+     "p50_ms": 92.159,
+     "p90_ms": 145.535,
+     "p99_ms": 201.087
+    },
+    "complete": 30,
+    "messages": 30,
+    "per_client": {
+     "max_ms": 201.087,
+     "mean_ms": 47.08,
+     "n": 30000,
+     "p50_ms": 43.711,
+     "p90_ms": 78.399,
+     "p99_ms": 138.367
+    },
+    "post": {
+     "max_ms": 202.623,
+     "mean_ms": 103.59,
+     "n": 30,
+     "p50_ms": 93.567,
+     "p90_ms": 130.303,
+     "p99_ms": 202.623
+    }
+   },
+   "ready": 1000,
+   "subscriptions_per_client": 6,
+   "throughput": {
+    "all_clients": {
+     "max_ms": 4263.935,
+     "mean_ms": 856.69,
+     "n": 179,
+     "p50_ms": 871.423,
+     "p90_ms": 1273.855,
+     "p99_ms": 2930.687
+    },
+    "complete": 179,
+    "delivered_msgs_per_sec": 11.4,
+    "drain_secs": 0.0,
+    "frames_per_sec": 11358.0,
+    "per_client": {
+     "max_ms": 4263.935,
+     "mean_ms": 358.62,
+     "n": 179000,
+     "p50_ms": 214.399,
+     "p90_ms": 822.271,
+     "p99_ms": 2166.783
+    },
+    "post": {
+     "max_ms": 5218.303,
+     "mean_ms": 341.94,
+     "n": 179,
+     "p50_ms": 243.455,
+     "p90_ms": 569.855,
+     "p99_ms": 4894.719
+    },
+    "posted": 179,
+    "posters": 4,
+    "posts_per_sec": 11.4,
+    "wire_mb_per_sec": 0.0
+   },
+   "process_memory": {
+    "connect": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 100.9,
+       "peak_anon_mb": 94.2,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.5,
+       "peak_anon_mb": 18.1,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.2,
+       "peak_anon_mb": 382.7,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 764.7,
+       "peak_anon_mb": 906.8,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1118.6
+    },
+    "connected": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 101.6,
+       "peak_anon_mb": 94.9,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.5,
+       "peak_anon_mb": 18.1,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.2,
+       "peak_anon_mb": 382.7,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 706.8,
+       "peak_anon_mb": 848.6,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1104.9
+    },
+    "paced": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 105.2,
+       "peak_anon_mb": 98.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.6,
+       "peak_anon_mb": 18.2,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 265.2,
+       "peak_anon_mb": 382.7,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 859.0,
+       "peak_anon_mb": 1000.3,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1261.1
+    },
+    "paced_drained": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 105.2,
+       "peak_anon_mb": 98.6,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.6,
+       "peak_anon_mb": 18.2,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 264.9,
+       "peak_anon_mb": 382.3,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 857.7,
+       "peak_anon_mb": 999.0,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1259.8
+    },
+    "saturated": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 107.1,
+       "peak_anon_mb": 100.4,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.9,
+       "peak_anon_mb": 18.6,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 264.9,
+       "peak_anon_mb": 382.3,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 905.7,
+       "peak_anon_mb": 1047.4,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1307.6
+    },
+    "saturated_posted": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 107.1,
+       "peak_anon_mb": 100.4,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.9,
+       "peak_anon_mb": 18.6,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 263.3,
+       "peak_anon_mb": 380.8,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 883.6,
+       "peak_anon_mb": 1025.2,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1286.4
+    },
+    "saturated_drained": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 107.1,
+       "peak_anon_mb": 100.4,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.9,
+       "peak_anon_mb": 18.6,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 263.3,
+       "peak_anon_mb": 380.8,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 883.6,
+       "peak_anon_mb": 1025.2,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1286.4
+    },
+    "done": {
+     "roles": {
+      "other": {
+       "peak_pss_mb": 10.5,
+       "peak_anon_mb": 7.4,
+       "procs": 2
+      },
+      "thrust": {
+       "peak_pss_mb": 107.4,
+       "peak_anon_mb": 100.8,
+       "procs": 1
+      },
+      "redis": {
+       "peak_pss_mb": 21.9,
+       "peak_anon_mb": 18.6,
+       "procs": 1
+      },
+      "jobs": {
+       "peak_pss_mb": 263.3,
+       "peak_anon_mb": 380.8,
+       "procs": 4
+      },
+      "puma": {
+       "peak_pss_mb": 887.8,
+       "peak_anon_mb": 1029.5,
+       "procs": 4
+      }
+     },
+     "peak_total_pss_mb": 1290.6
+    }
+   }
+  }
+ ],
+ "upload": {
+  "bytes": 505420,
+  "file": "black_hole.jpg",
+  "median_total_ms": 79.0,
+  "runs": [
+   {
+    "post_ms": 217.4,
+    "post_status": 200,
+    "thumb_bytes": 630,
+    "thumb_ms": 16.8,
+    "thumb_status": 200,
+    "total_ms": 234.1
+   },
+   {
+    "post_ms": 155.1,
+    "post_status": 200,
+    "thumb_bytes": 630,
+    "thumb_ms": 0.7,
+    "thumb_status": 200,
+    "total_ms": 155.8
+   },
+   {
+    "post_ms": 78.5,
+    "post_status": 200,
+    "thumb_bytes": 630,
+    "thumb_ms": 0.4,
+    "thumb_status": 200,
+    "total_ms": 79.0
+   },
+   {
+    "post_ms": 61.0,
+    "post_status": 200,
+    "thumb_bytes": 630,
+    "thumb_ms": 0.5,
+    "thumb_status": 200,
+    "total_ms": 61.6
+   },
+   {
+    "post_ms": 52.9,
+    "post_status": 200,
+    "thumb_bytes": 630,
+    "thumb_ms": 0.5,
+    "thumb_status": 200,
+    "total_ms": 53.4
+   }
+  ]
+ },
+ "loadavg_start": "2.73 3.90 4.09 3/5283 238721",
+ "loadavg_end": "4.63 4.23 4.16 1/5410 253831"
+}
