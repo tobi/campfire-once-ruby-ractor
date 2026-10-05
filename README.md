@@ -63,8 +63,7 @@ between runs from tens to hundreds of milliseconds) and peak memory.
 
 ## How it works
 
-An [animated explainer](https://htmlpreview.github.io/?https://github.com/tobi/campfire-once-ruby-ractor/blob/main/docs/explainer.html)
-([source](docs/explainer.html)) walks through the architecture, the decisions and where the speed
+An animated explainer, [`docs/explainer.html`](docs/explainer.html) (open it locally in a browser), walks through the architecture, the decisions and where the speed
 comes from. The [porting guide](docs/PORTING.md) has the details and the rules; in short:
 
 - **Ractors, not processes.** `WEB_CONCURRENCY` worker Ractors each run a Falcon/Async reactor on
