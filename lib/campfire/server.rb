@@ -29,7 +29,7 @@ module Campfire
           Campfire::Server.work(fds, url, index)
         end
       end
-      Log.info "campfire: #{config.workers} ractors listening on #{url} (ruby #{RUBY_VERSION}, YJIT #{defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?})"
+      Log.info "campfire: #{config.workers} ractors listening on #{url} (#{RUBY_DESCRIPTION})"
 
       %w[INT TERM].each { |sig| trap(sig) { exit!(0) } }
       workers.each(&:join)

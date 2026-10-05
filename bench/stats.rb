@@ -9,8 +9,8 @@
 require "json"
 
 dir = ARGV.fetch(0)
-APP_ORDER = %w[reference go rust ruby rust-identity].freeze
-NAMES = { "reference" => "Rails", "go" => "Go", "rust" => "Rust", "ruby" => "Ruby", "rust-identity" => "Rust (no gzip)" }.freeze
+APP_ORDER = %w[reference go rust ruby ruby-head ruby-zjit rust-identity].freeze
+NAMES = { "reference" => "Rails", "go" => "Go", "rust" => "Rust", "ruby" => "Ruby", "ruby-head" => "Ruby head", "ruby-zjit" => "Ruby head ZJIT", "rust-identity" => "Rust (no gzip)" }.freeze
 
 runs = Hash.new { |h, k| h[k] = [] }
 Dir[File.join(dir, "*-*.json")].sort.each do |f|

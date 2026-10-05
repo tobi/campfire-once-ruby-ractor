@@ -2,4 +2,5 @@
 # Container entry: create the schema on an empty database, then serve.
 set -e
 cd "$(dirname "$0")/.."
-exec ruby --yjit bin/campfire
+# RUBY_JIT picks the JIT flag: --yjit by default, --zjit on Ruby builds that have it.
+exec ruby "${RUBY_JIT:---yjit}" bin/campfire

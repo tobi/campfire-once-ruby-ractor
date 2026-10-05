@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Benchmark Rails, Go, Rust and the Ruby (Falcon + Ractors) port on the same seed and CPUs.
 # A copy of ref-rust/bench/run (ROOT points there for the seed, loadgen and helpers) that adds
-# the `go` (GO_IMAGE) and `ruby` (RUBY_IMAGE) apps. Ruby runs one worker Ractor per server CPU
+# the `go` (GO_IMAGE), `ruby` (RUBY_IMAGE) and `ruby-head` (RUBY_HEAD_IMAGE, Dockerfile.head) apps, and
+# `ruby-zjit`: the head image with ZJIT instead of YJIT. Ruby runs one worker Ractor per server CPU
 # (RUBY_EXTRA_ENV), its natural process model, as Rails gets Puma's and Go/Rust their runtimes'.
 #
 #   bench/run [--apps reference,rust[,rust-identity]] [--reps 3] [--out DIR] [--user-agent UA]
@@ -45,6 +46,7 @@ REFERENCE_IMAGE=${REFERENCE_IMAGE:-campfire-reference:app}
 RUST_IMAGE=${RUST_IMAGE:-campfire-rust:app}
 GO_IMAGE=${GO_IMAGE:-campfire-go:app}
 RUBY_IMAGE=${RUBY_IMAGE:-campfire-ruby:app}
+RUBY_HEAD_IMAGE=${RUBY_HEAD_IMAGE:-campfire-ruby:head}
 SERVER_CPUS=${SERVER_CPUS:-8-11}
 LOADGEN_CPUS=${LOADGEN_CPUS:-12-15}
 HTTP_SECS=${HTTP_SECS:-8}
@@ -102,7 +104,7 @@ AVATAR=$(label avatar_tokens.jason)    # image avatar
 EMAIL=$(label emails.david)
 PASSWORD=$(label passwords.all)
 
-image_for() { case "$1" in reference) echo "$REFERENCE_IMAGE" ;; rust|rust-identity) echo "$RUST_IMAGE" ;; go) echo "$GO_IMAGE" ;; ruby) echo "$RUBY_IMAGE" ;; esac; }
+image_for() { case "$1" in reference) echo "$REFERENCE_IMAGE" ;; rust|rust-identity) echo "$RUST_IMAGE" ;; go) echo "$GO_IMAGE" ;; ruby) echo "$RUBY_IMAGE" ;; ruby-head|ruby-zjit) echo "$RUBY_HEAD_IMAGE" ;; esac; }
 
 # Environment: parity/.env.reference, but with the reference's *default* process model for
 # SERVER_CPUS (config/puma.rb: workers = ceil(nproc * 0.666), JOB_CONCURRENCY the same, 5 threads;
@@ -114,7 +116,8 @@ env_args() {
   grep -Ev '^(#|$|WEB_CONCURRENCY|JOB_CONCURRENCY|RAILS_MAX_THREADS|RAILS_LOG_LEVEL)' "$ENV_FILE" | sed 's/^/-e\n/'
   printf '%s\n' -e "WEB_CONCURRENCY=$workers" -e "JOB_CONCURRENCY=$workers" -e RAILS_MAX_THREADS=5 -e RAILS_LOG_LEVEL=warn
   if [[ "${1:-}" = rust* ]]; then local e; for e in $RUST_EXTRA_ENV; do printf '%s\n' -e "$e"; done; fi
-  if [[ "${1:-}" = ruby ]]; then local e; for e in ${RUBY_EXTRA_ENV:-WEB_CONCURRENCY=$ncpu}; do printf '%s\n' -e "$e"; done; fi
+  if [[ "${1:-}" = ruby* ]]; then local e; for e in ${RUBY_EXTRA_ENV:-WEB_CONCURRENCY=$ncpu}; do printf '%s\n' -e "$e"; done; fi
+  if [[ "${1:-}" = ruby-zjit ]]; then printf '%s\n' -e RUBY_JIT=--zjit -e RUBY_YJIT_ENABLE=0; fi
 }
 
 # Web Push and webhook deliveries to the seed's real endpoints (fcm.googleapis.com, ...) go to a
