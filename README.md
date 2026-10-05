@@ -64,7 +64,8 @@ between runs from tens to hundreds of milliseconds) and peak memory.
 **On Ruby master.** The same app on a build of ruby/ruby master ([`Dockerfile.head`](Dockerfile.head),
 [report](bench/results/ruby-head-zjit-20261005/report.md)) is 1.2× faster on the room page and 1.5× on the messages page. It
 delivers 1.6–2.2× more cable messages at 500–1,000 clients, and peaks at 723 MB instead of 1,247 MB. ZJIT
-(`bench/run-all --apps ruby-zjit`) works with Ractors and runs within 2–7% of YJIT.
+(`bench/run-all --apps ruby-zjit`) works with Ractors and runs 3–6% behind YJIT on the pages
+([report](bench/results/ruby-zjit-20261005/report.md); each rep's boot log confirms `JIT: ZJIT`).
 
 ## How it works
 

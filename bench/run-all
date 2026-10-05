@@ -267,6 +267,7 @@ json.dump({
   "http": json.loads(http), "cable": json.loads(cable), "upload": json.loads(upload), "loadavg_start": load0, "loadavg_end": load,
 }, open(f, "w"), indent=1)
 PY
+  docker logs "$CONTAINER" 2>&1 | grep -m1 "listening" > "$OUT/$app-$rep.boot.log" || true  # Ruby: the active JIT
   docker rm -f "$CONTAINER" >/dev/null
   rm -rf "$WORK/$app"
   log "$app rep $rep: done -> $f"
