@@ -1,0 +1,18 @@
+15:48:51 go rep 1 start:  15:48:51 up 1 day, 23:30,  5 users,  load average: 18.20, 42.01, 30.73
+15:56:28 go rep 1 end:    15:56:28 up 1 day, 23:37,  5 users,  load average: 5.99, 12.94, 20.52
+15:56:28 rust rep 1 start:  15:56:28 up 1 day, 23:37,  5 users,  load average: 5.99, 12.94, 20.52
+16:02:35 rust rep 1 end:    16:02:35 up 1 day, 23:43,  5 users,  load average: 6.37, 8.27, 15.79
+16:02:35 ruby rep 1 start:  16:02:35 up 1 day, 23:43,  5 users,  load average: 6.37, 8.27, 15.79
+16:08:45 ruby rep 1 end:    16:08:45 up 1 day, 23:50,  5 users,  load average: 5.22, 5.80, 12.07
+16:08:45 ruby rep 2 start:  16:08:45 up 1 day, 23:50,  5 users,  load average: 5.22, 5.80, 12.07
+16:14:36 ruby rep 2 end:    16:14:36 up 1 day, 23:55,  5 users,  load average: 3.41, 4.21, 9.33
+16:14:36 rust rep 2 start:  16:14:36 up 1 day, 23:55,  5 users,  load average: 3.41, 4.21, 9.33
+16:19:46 rust rep 2 end:    16:19:46 up 2 days, 1 min,  5 users,  load average: 19.56, 10.01, 9.98
+16:19:46 go rep 2 start:  16:19:46 up 2 days, 1 min,  5 users,  load average: 19.56, 10.01, 9.98
+16:27:15 go rep 2 end:    16:27:15 up 2 days, 8 min,  5 users,  load average: 5.20, 5.83, 7.77
+16:27:15 go rep 3 start:  16:27:15 up 2 days, 8 min,  5 users,  load average: 5.20, 5.83, 7.77
+16:33:06 go rep 3 end:    16:33:06 up 2 days, 14 min,  5 users,  load average: 5.53, 5.29, 6.83
+16:33:06 rust rep 3 start:  16:33:06 up 2 days, 14 min,  5 users,  load average: 5.53, 5.29, 6.83
+16:39:00 rust rep 3 end:    16:39:00 up 2 days, 20 min,  5 users,  load average: 7.15, 6.26, 6.66
+16:39:00 ruby rep 3 start:  16:39:00 up 2 days, 20 min,  5 users,  load average: 7.15, 6.26, 6.66
+16:53:15 ruby rep 3 end:    16:53:15 up 2 days, 34 min,  5 users,  load average: 6.54, 7.35, 8.21
