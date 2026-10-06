@@ -1,15 +1,21 @@
 # frozen_string_literal: true
 
 require "json"
+begin
+  require File.expand_path("../../campfire_vips", __dir__) # ext/campfire_vips; optional
+rescue LoadError
+  nil
+end
 
 module Campfire
   module Storage
     # Image/video processing behind a small interface, run from job Ractors
     # only (CPU and child processes stay off request workers; Process.spawn
-    # works in non-main Ractors). Images go through the libvips CLI with the
-    # exact operations of Rails' image_processing/vips pipeline (output is
-    # byte-identical to the reference app's variants); videos through ffmpeg,
-    # as upstream does. Backends are modules with:
+    # works in non-main Ractors). Images go through libvips (in-process via
+    # ext/campfire_vips, else the vips CLI) with the exact operations of Rails'
+    # image_processing/vips pipeline (output is byte-identical to the reference
+    # app's variants); videos through ffmpeg, as upstream does. Backends are
+    # modules with:
     #
     #   image_dimensions(path)                         -> [width, height] or nil
     #   resize_to_limit(input, output, width, height)  -> output (format from output's extension;
@@ -125,6 +131,28 @@ module Campfire
         def video_frame(input) = FFmpeg.video_frame(input)
       end
 
+      # The same pipeline in-process (ext/campfire_vips, once-campfire-rust's vips.rs): no child
+      # processes and no full-size intermediate files. Each vips CLI run cost ~33 ms of startup alone,
+      # and an upload took four. Runs without the GVL, so other Ractors keep going.
+      module InProcess
+        module_function
+
+        def available? = defined?(::CampfireVips) ? true : false
+
+        def image_dimensions(path)
+          w, h, orientation = ::CampfireVips.header(path)
+          orientation&.match?(Vips::ROTATED) ? [h, w] : [w, h]
+        rescue ::CampfireVips::Error
+          nil
+        end
+
+        def resize_to_limit(input, output, width, height)
+          ::CampfireVips.resize_to_limit(input, output, width, height)
+        rescue ::CampfireVips::Error => e
+          raise Error, "libvips: #{e.message[0, 500]}"
+        end
+      end
+
       module FFmpeg
         FFMPEG = (ENV["FFMPEG_PATH"] || "ffmpeg").freeze
         FFPROBE = (ENV["FFPROBE_PATH"] || "ffprobe").freeze
@@ -184,7 +212,7 @@ module Campfire
         end
       end
 
-      IMAGE = Vips.available? ? Vips : FFmpeg
+      IMAGE = if InProcess.available? then InProcess elsif Vips.available? then Vips else FFmpeg end
       VIDEO = FFmpeg
 
       def probe(path) = VIDEO.probe(path)

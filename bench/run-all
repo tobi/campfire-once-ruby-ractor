@@ -34,6 +34,7 @@
 # free on the host. NETWORK=bridge measures as the preliminary run did instead: the container on
 # Docker's bridge, reached through a published port (docker-proxy), with no DNS resolver.
 #   LOAD_MAX=1.5 LOAD_WAIT_SECS=900 PROCMEM_CPUS=0 SUITES="http cable upload"
+#   KEEP_LOGS=1 also saves each container's full log as {app}-{rep}.log
 set -euo pipefail
 
 ROOT=${CAMPFIRE_REF_RUST:-/home/tobi/src/once/ref-rust}
@@ -268,6 +269,7 @@ json.dump({
 }, open(f, "w"), indent=1)
 PY
   docker logs "$CONTAINER" 2>&1 | grep -m1 "listening" > "$OUT/$app-$rep.boot.log" || true  # Ruby: the active JIT
+  if [ -n "${KEEP_LOGS:-}" ]; then docker logs "$CONTAINER" > "$OUT/$app-$rep.log" 2>&1; fi
   docker rm -f "$CONTAINER" >/dev/null
   rm -rf "$WORK/$app"
   log "$app rep $rep: done -> $f"

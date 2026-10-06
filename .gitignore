@@ -9,3 +9,8 @@ vendor/gems/extralite/ext/extralite/*.o
 vendor/gems/extralite/ext/extralite/Makefile
 vendor/gems/extralite/ext/extralite/mkmf.log
 vendor/gems/extralite/ext/extralite/extralite_ext.so
+/lib/campfire_vips.so
+/ext/campfire_vips/*.o
+/ext/campfire_vips/*.so
+/ext/campfire_vips/Makefile
+/ext/campfire_vips/mkmf.log

@@ -19,7 +19,7 @@ RUN apt-get update -qq && \
 
 FROM base AS build
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential pkg-config libsqlite3-dev libssl-dev git && \
+    apt-get install --no-install-recommends -y build-essential pkg-config libsqlite3-dev libssl-dev libvips-dev git && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 COPY Gemfile Gemfile.lock ./
 COPY vendor/gems vendor/gems
@@ -28,6 +28,8 @@ RUN cd vendor/gems/extralite/ext/extralite && ruby extconf.rb && make -j"$(nproc
 RUN bundle install --jobs "$(nproc)" && \
     rm -rf "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 COPY . .
+RUN cd ext/campfire_vips && ruby extconf.rb && make -j"$(nproc)" && \
+    cp campfire_vips.so ../../lib/ && make clean && rm -f Makefile mkmf.log
 
 
 FROM base
