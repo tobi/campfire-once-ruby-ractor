@@ -18,7 +18,7 @@ module Campfire
   #   @footer      <footer id="footer"> content (Rails `yield :footer`)
   #   @sidebar     <aside id="sidebar"> content (Rails `yield :sidebar`)
   #
-  # `frame_layout { ... }` is turbo-rails' frame layout (csrf meta + @head);
+  # `frame_layout { ... }` is turbo-rails' frame layout (@head and the content);
   # `frame_or_application_layout { ... }` picks it for Turbo-Frame requests,
   # as controllers without an explicit `layout` do upstream.
   #
@@ -61,12 +61,10 @@ module Campfire
 
     # turbo-rails' layouts/turbo_rails/frame (controllers that keep turbo-rails'
     # `layout -> { "turbo_rails/frame" if turbo_frame_request? }`): the block
-    # is the page's main content, wrapped in a minimal document with the CSRF
-    # meta tags and @head.
+    # is the page's main content, wrapped in a minimal document with @head
+    # (and no CSRF meta tags: forgery protection is by Sec-Fetch-Site).
     def frame_layout
       @b << "<html>\n  <head>\n    "
-      csrf_meta_tags
-      @b << "\n    "
       slot(@head)
       @b << "\n  </head>\n  <body>\n    "
       yield
@@ -83,11 +81,6 @@ module Campfire
       @b << "<title>"
       h(@page_title || "Campfire")
       @b << "</title>"
-      nil
-    end
-
-    def csrf_meta_tags
-      @b << %(<meta name="csrf-param" content="authenticity_token" />\n<meta name="csrf-token" content=") << csrf_token << %(" />)
       nil
     end
 

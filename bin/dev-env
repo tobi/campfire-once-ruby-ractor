@@ -3,6 +3,8 @@ export SECRET_KEY_BASE=5335c3b1ad35b4ad170c3413bd651ef3b6ed64e257261871a6de3f978
 export VAPID_PUBLIC_KEY=BEYXTBB5_jNhNzXDmx5KEU55Vbbd-u--Lk9rM5OFQvUkPIBwZJ9QzAq0zdEzFw6yTV8cTriz_qYBVicY02_VxTQ=
 export VAPID_PRIVATE_KEY=qfXLHghuG1rSHZUVo9SscNRI-0EIHRbIrfeGCqbAwak=
 export APP_VERSION=parity GIT_REVISION=parity
+# Plain HTTP, as parity/.env.reference: writes without Sec-Fetch-Site are allowed.
+export DISABLE_SSL=true
 export CAMPFIRE_DATABASE_PATH=${CAMPFIRE_DATABASE_PATH:-$PWD/tmp/seed/db/production.sqlite3}
 export CAMPFIRE_FILES_PATH=${CAMPFIRE_FILES_PATH:-$PWD/tmp/seed/storage}
 export PORT=${PORT:-3200}

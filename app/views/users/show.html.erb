@@ -10,7 +10,7 @@
     <% if user.bot? %>
       <div class="pad-double--inline push--inline push--block-start">
         <% if user.active? %>
-          <form class="button_to" method="post" action="/rooms/directs?user_ids%5B%5D=<%== user.id %>"><button class="btn btn--primary full-width txt--large" type="submit"><img src="<%== asset_path("messages.svg") %>" /></button><%= hidden_per_form_token("/rooms/directs", "post") %></form>
+          <form class="button_to" method="post" action="/rooms/directs?user_ids%5B%5D=<%== user.id %>"><button class="btn btn--primary full-width txt--large" type="submit"><img src="<%== asset_path("messages.svg") %>" /></button></form>
         <% else %>
           <div><%= user.name %> is no longer on this account</div>
         <% end %>
@@ -29,7 +29,7 @@
           <div class="pad-inline-double margin-inline margin-block-start">
             <form class="button_to" method="post" action="/rooms/directs?user_ids%5B%5D=<%== user.id %>"><button class="btn btn--reversed full-width txt-large" type="submit">
               <img aria-hidden="true" aria-label="Ping <%= user.name %>" src="<%== asset_path("messages.svg") %>" />
-</button><%= hidden_per_form_token("/rooms/directs", "post") %></form>          </div>
+</button></form>          </div>
 
           <% if current_user.can_administer? %>
             <hr class="margin-block-start borderless">

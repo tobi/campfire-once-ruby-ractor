@@ -88,7 +88,7 @@ module Campfire
       @b << '" type="submit"><img aria-hidden="true" src="' << Assets.path("notification-bell-#{involvement}.svg") <<
         '" width="20" height="20" /><span class="for-screen-reader" id="involvement_label_' << room.dom_key << '">'
       h(HUMANIZE_INVOLVEMENT[involvement])
-      @b << '</span></button><input type="hidden" name="authenticity_token" value="' << form_authenticity_token(action, "put") << '" /></form>'
+      @b << "</span></button></form>"
       nil
     end
   end

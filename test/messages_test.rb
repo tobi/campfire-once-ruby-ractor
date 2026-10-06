@@ -112,7 +112,6 @@ class MessagesFlowTest < Minitest::Test
 
   def setup
     @c = AppHarness::Client.new
-    @c.csrf!
     AppHarness.captured.clear
   end
 
@@ -211,9 +210,14 @@ class MessagesFlowTest < Minitest::Test
     assert_empty AppHarness.captured
   end
 
-  def test_create_requires_csrf
-    r = @c.form("POST", "/rooms/#{ROOM}/messages", { "message[body]" => "<p>x</p>" }, "x-csrf-token" => "bogus")
+  def test_create_refuses_cross_site_writes
+    r = @c.form("POST", "/rooms/#{ROOM}/messages", { "message[body]" => "<p>x</p>" }, "sec-fetch-site" => "cross-site")
     assert_equal 422, r.status
+    r = @c.form("POST", "/rooms/#{ROOM}/messages", { "message[body]" => "<p>x</p>" }, "origin" => "http://evil.example")
+    assert_equal 422, r.status
+    r = @c.form("POST", "/rooms/#{ROOM}/messages", { "message[body]" => "<p>x</p>" }, "sec-fetch-site" => nil)
+    assert_equal 422, r.status, "without DISABLE_SSL (force_ssl), writes need the header, whatever the request's scheme"
+    assert_empty AppHarness.captured
   end
 
   def test_edit_forbidden_for_non_admin_non_creator

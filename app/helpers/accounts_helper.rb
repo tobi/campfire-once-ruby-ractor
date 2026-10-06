@@ -67,12 +67,6 @@ module Campfire
       end
     end
 
-    # form_with / button_to authenticity token for `action` (path or URL).
-    def form_token(action, method = "post")
-      path = action.start_with?("/") ? action : action.sub(%r{\A\w+://[^/]+}, "")
-      hidden_per_form_token(path, method)
-    end
-
     # RoomsHelper
     unless method_defined?(:link_back_to_last_room_visited)
       def link_back_to_last_room_visited
@@ -96,9 +90,7 @@ module Campfire
         @b << '" data-turbo-confirm="Are you sure you want to delete this room and all messages in it? This can’t be undone." type="submit"><img aria-hidden="true" src="' <<
           Assets.path("trash.svg") << '" width="20" height="20" /><span class="overflow-ellipsis">'
         h(name)
-        @b << "</span></button>"
-        form_token("/rooms/#{room.id}", "delete")
-        @b << "</form>"
+        @b << "</span></button></form>"
         nil
       end
     end

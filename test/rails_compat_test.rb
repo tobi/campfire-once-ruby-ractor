@@ -181,64 +181,27 @@ class RailsCompatTest < Minitest::Test
     check(g, "verify session_token", token, SECRETS.verify_cookie("session_token", s["session_token_raw"], now: NOW))
     check(g, "sign session_token", s["session_token_raw"], SECRETS.sign_cookie("session_token", token, expires: SECRETS.permanent_expiry(NOW)))
     check(g, "session_token set_cookie", s["session_token_set_cookie"], RC.session_token_set_cookie(SECRETS, token, now: NOW))
-
-    csrf = session["_csrf_token"]
-    check(g, "csrf meta token valid", true, RC::CSRF.valid_authenticity_token?(csrf, s["csrf_meta_token"], request_path: "/session", request_method: "POST"))
-    check(g, "csrf form token valid", true, RC::CSRF.valid_authenticity_token?(csrf, s["session_form_token"], request_path: "/session", request_method: "POST"))
-    check(g, "bad token invalid", false, RC::CSRF.valid_authenticity_token?(csrf, "bad", request_path: "/session", request_method: "POST"))
-    check(g, "statuses", [200, 422, 302, 302, 422],
-      s.values_at("new_status", "post_with_bad_token_status", "post_with_form_token_status", "post_with_meta_token_header_status", "post_with_cross_origin_status"))
   end
 
-  # ---- CSRF ---------------------------------------------------------------
+  # ---- forgery protection (Sec-Fetch-Site + Origin, no tokens) -------------
 
-  def test_csrf
+  def test_forgery_protection
     c = V::COMPAT["csrf"]
-    g = "csrf"
-    session_token = c["session_token"]
-    raw = RC::CSRF.raw_token(session_token)
-    check(g, "per_form_csrf_tokens", c["per_form_csrf_tokens"], RC::CSRF::PER_FORM_CSRF_TOKENS)
-    check(g, "origin_check", c["forgery_protection_origin_check"], RC::CSRF::ORIGIN_CHECK)
-    check(g, "global token", c["global_token_hex"], RC::CSRF.global_token(raw).unpack1("H*"))
-    c["global_tokens"].each_with_index do |tok, i|
-      check(g, "unmask global ##{i}", c["global_token_hex"], RC::CSRF.unmask(RC::Util.urlsafe_decode64(tok)).unpack1("H*"))
-    end
-    ex = c["generated_session_token_example"]
-    gen = RC::CSRF.generate_session_token
-    check(g, "generated token shape", [ex.length, ex.match?(/\A[A-Za-z0-9_-]+\z/)], [gen.length, gen.match?(/\A[A-Za-z0-9_-]+\z/)])
-    check(g, "decoded token length", RC::Util.urlsafe_decode64(ex).bytesize, RC::Util.urlsafe_decode64(gen).bytesize)
-
-    c["form_tokens"].each do |f|
-      label = "#{f["method"]} #{f["action"]} on #{f["page_path"]}"
-      norm = RC::CSRF.normalize_action_path(f["action"], f["page_path"])
-      check("csrf.form_tokens", "normalize #{label}", f["normalized_action_path"], norm)
-      check("csrf.form_tokens", "hmac #{label}", f["unmasked_hex"], RC::CSRF.per_form_token(raw, norm, f["method"]).unpack1("H*"))
-      check("csrf.form_tokens", "unmask #{label}", f["unmasked_hex"], RC::CSRF.unmask(RC::Util.urlsafe_decode64(f["token"])).unpack1("H*"))
-      ours = RC::CSRF.masked_token(session_token, action: f["action"], method: f["method"], request_path: f["page_path"])
-      check("csrf.form_tokens", "ours unmask #{label}", f["unmasked_hex"], RC::CSRF.unmask(RC::Util.urlsafe_decode64(ours)).unpack1("H*"))
-    end
-
-    c["validity"].each do |v|
-      label = "#{v["case"]} -> #{v["method"]} #{v["path"]}"
-      actual = RC::CSRF.valid_authenticity_token?(session_token, v["token"], request_path: v["path"], request_method: v["method"])
-      check("csrf.validity", label, v["expected"], actual)
-    end
-
+    check("csrf", "origin_check", c["forgery_protection_origin_check"], RC::CSRF::ORIGIN_CHECK)
     c["origin"].each do |o|
       expected = o["expected"] == "raises" ? false : o["expected"] # Rails raises InvalidAuthenticityToken -> same 422
       check("csrf.origin", "#{o["origin"].inspect} vs #{o["base_url"]}", expected, RC::CSRF.valid_request_origin?(o["origin"], o["base_url"]))
     end
 
-    # Our own masked tokens round-trip, are fresh each time and 86 chars.
-    a = RC::CSRF.masked_token(session_token)
-    b = SECRETS.mask_csrf_token(session_token)
-    refute_equal a, b
-    assert_equal 86, a.length
-    assert RC::CSRF.valid_authenticity_token?(session_token, a)
-    assert SECRETS.valid_csrf_token?(session_token, b)
-    refute RC::CSRF.valid_authenticity_token?(RC::CSRF.generate_session_token, a)
-    refute RC::CSRF.valid_authenticity_token?(nil, a)
-    refute RC::CSRF.valid_authenticity_token?(session_token, nil)
+    base = "https://campfire.example"
+    assert RC::CSRF.valid_request?(nil, base, "same-origin", true)
+    assert RC::CSRF.valid_request?(base, base, "same-site", true)
+    refute RC::CSRF.valid_request?(base, base, "cross-site", true)
+    refute RC::CSRF.valid_request?(base, base, "none", true), "a typed URL or bookmark doesn't write"
+    refute RC::CSRF.valid_request?(nil, base, nil, true), "HTTPS writes need the header"
+    assert RC::CSRF.valid_request?(nil, "http://campfire.example", nil, false), "plain HTTP falls back to SameSite=Lax and Origin"
+    refute RC::CSRF.valid_request?("https://evil.example", base, "same-site", true), "the Origin check stays"
+    refute RC::CSRF.valid_request?("null", base, "same-origin", true)
   end
 
   # ---- signed ids ---------------------------------------------------------
@@ -377,26 +340,23 @@ class RailsCompatTest < Minitest::Test
     vec = V::COMPAT
     signed_raw = Ractor.make_shareable(vec["signed_cookies"]["generate"][0]["raw"].dup)
     enc_raw = Ractor.make_shareable(vec["encrypted_cookies"]["generate"][0]["raw"].dup)
-    sess_tok = Ractor.make_shareable(vec["csrf"]["session_token"].dup)
     secrets = SECRETS
-    r = Ractor.new(secrets, signed_raw, enc_raw, sess_tok) do |s, sr, er, st|
+    r = Ractor.new(secrets, signed_raw, enc_raw) do |s, sr, er|
       now = Time.utc(2026, 1, 1, 12)
       fresh = s.sign_cookie("session_token", "abc", expires: s.permanent_expiry(now))
       enc = s.encrypt_cookie("_campfire_session", { "a" => 1 }, expires: s.permanent_expiry(now))
-      masked = Campfire::RailsCompat::CSRF.masked_token(st, action: "/session", method: "post", request_path: "/session/new")
       sid = s.signed_id("User", 7, purpose: "avatar")
       [
         s.verify_cookie("session_token", sr, now: now),
         s.verify_cookie("session_token", fresh, now: now),
         s.decrypt_cookie("_campfire_session", er, now: now),
         s.decrypt_cookie("_campfire_session", enc, now: now),
-        Campfire::RailsCompat::CSRF.valid_authenticity_token?(st, masked, request_path: "/session/", request_method: "POST"),
+        Campfire::RailsCompat::CSRF.valid_request?("https://a.example", "https://a.example", "same-origin", true),
         s.verify_signed_id(sid, model_name: "User", purpose: "avatar", now: now),
         s.verified_stream_name(s.signed_stream_name("rooms")),
         s.verify_sgid(s.attachable_sgid("User", 1), purpose: "attachable", now: now).to_s,
         Campfire::RailsCompat.cookie_value("a=1; session_token=x%2By", "session_token"),
         Campfire::RailsCompat.escape_cookie("a+b/c=d é"),
-        Campfire::RailsCompat::CSRF.normalize_action_path("messages", "/rooms/1"),
         Campfire::RailsCompat::GlobalID.attachable_gid_from_possibly_expired_sgid(s.attachable_sgid("User", 2)).to_s
       ]
     end
@@ -405,7 +365,7 @@ class RailsCompatTest < Minitest::Test
       vec["signed_cookies"]["generate"][0]["value"], "abc",
       vec["encrypted_cookies"]["generate"][0]["value"], { "a" => 1 },
       true, 7, "rooms", "gid://campfire/User/1?expires_in", "x+y",
-      "a%2Bb%2Fc%3Dd+%C3%A9", "/rooms/1/messages", "gid://campfire/User/2?expires_in"
+      "a%2Bb%2Fc%3Dd+%C3%A9", "gid://campfire/User/2?expires_in"
     ]
     got.zip(expected).each_with_index { |(g, e), i| check("ractor", "result ##{i}", e, g) }
   end

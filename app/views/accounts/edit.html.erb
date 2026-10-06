@@ -4,14 +4,14 @@
 <% if current_user.can_administer? %>
 <% action = "/account.#{@account.id}" %>
     <div class="align-center center avatar__form gap" data-controller="upload-preview">
-      <form class="txt--medium" data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+      <form class="txt--medium" data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
         <label class="btn input--file">
           <img aria-hidden="true" src="<%== asset_path("camera.svg") %>" width="20" height="20" />
           <input class="input" accept="image/*" data-action="upload-preview#previewImage change-&gt;form#submit" type="file" name="account[logo]" id="account_logo" />
           <span class="for-screen-reader">Upload logo</span>
         </label>
 </form>
-      <form data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+      <form data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
         <label class="btn avatar input--file account-logo txt-xx-large">
           <img role="presentation" data-upload-preview-target="image" src="<%= fresh_account_logo_path %>" width="48" height="48" />
           <input class="input" accept="image/*" data-action="upload-preview#previewImage change-&gt;form#submit" type="file" name="account[logo]" id="account_logo" />
@@ -23,11 +23,11 @@
         <form class="button_to" method="post" action="<%= logo_path %>"><input type="hidden" name="_method" value="delete" /><button class="btn btn--negative txt-small avatar__delete-btn" type="submit">
           <img aria-hidden="true" src="<%== asset_path("minus.svg") %>" width="20" height="20" />
           <span class="for-screen-reader">Delete logo</span>
-</button><%= form_token("/account/logo", "delete") %></form><%= nil -%>
+</button></form><%= nil -%>
 <% end %>
     </div>
 
-    <form class="flex flex-column gap" data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+    <form class="flex flex-column gap" data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
       <div class="flex align-center gap">
         <%= translation_button(:account_name) %>
 
@@ -41,7 +41,7 @@
 </button>      </div>
 </form>
     <div class="margin-block-start pad-block pad-inline-double fill-shade border-radius">
-      <form class="flex align-center gap center" data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="put" /><%= form_token(action, "put") %>
+      <form class="flex align-center gap center" data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="put" />
         <div class="flex-item-grow flex align-center gap txt-align-start">
           <img class="colorize--black" aria-hidden="true" src="<%== asset_path("crown.svg") %>" width="18" height="18" /> Must be admin to create new rooms
         </div>

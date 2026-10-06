@@ -6,14 +6,14 @@
   <%= _pwa_install_instructions %>
 
   <div class="align-center center avatar__form gap" data-controller="upload-preview">
-    <form class="txt-medium" data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+    <form class="txt-medium" data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
       <label class="btn input--file">
         <img aria-hidden="true" src="<%== asset_path("camera.svg") %>" width="20" height="20" />
         <%== avatar_input %>
         <span class="for-screen-reader">Upload avatar</span>
       </label>
 </form>
-    <form data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+    <form data-controller="form" enctype="multipart/form-data" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
       <label class="btn avatar input--file txt-xx-large">
         <img aria-hidden="true" data-upload-preview-target="image" src="<%= fresh_user_avatar_path(@user.id, @user.updated_at) %>" width="300" height="300" />
         <%== avatar_input %>
@@ -25,11 +25,11 @@
       <form class="button_to" method="post" action="<%= avatar_path %>"><input type="hidden" name="_method" value="delete" /><button class="btn btn--negative txt-small avatar__delete-btn" type="submit">
         <img aria-hidden="true" src="<%== asset_path("minus.svg") %>" width="20" height="20" />
         <span class="for-screen-reader">Delete avatar</span>
-</button><%= form_token(avatar_path, "delete") %></form><%= nil -%>
+</button></form><%= nil -%>
 <% end %>
   </div>
 
-  <form data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %>
+  <form data-controller="form" action="<%= action %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
     <div class="flex flex-column gap">
       <div class="flex align-center gap">
         <%= translation_button(:user_name) %>

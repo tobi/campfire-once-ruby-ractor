@@ -258,6 +258,7 @@ module Campfire
     # ---- Rack::Deflater ----------------------------------------------------
 
     def deflate(request, response)
+      digested = PageParts.take_digested # set by rails! for this response's body, if any
       status = response.status
       fields = response.headers.to_a
       if fields.any? { |name, _| name == NO_DEFLATE }
@@ -288,7 +289,7 @@ module Campfire
         body = Protocol::HTTP::Body::Buffered.new([EMPTY_GZIP], EMPTY_GZIP.bytesize)
       elsif body.is_a?(Protocol::HTTP::Body::Buffered) || ((length = body.length) && length <= MAX_BUFFERED_GZIP)
         text = body.is_a?(Protocol::HTTP::Body::Buffered) && body.chunks.size == 1 ? body.chunks[0] : body.join
-        gz = text.nil? || text.empty? ? EMPTY_GZIP : ((parts = PageParts.of(text)) && PageParts.gzip(text, parts)) || Zlib.gzip(text)
+        gz = text.nil? || text.empty? ? EMPTY_GZIP : ((parts = PageParts.of(text)) && PageParts.gzip(text, parts)) || PageParts.gzip_digested(text, digested) || Zlib.gzip(text)
         body = Protocol::HTTP::Body::Buffered.new([gz], gz.bytesize)
       else
         body = GzipBody.new(body)
@@ -377,8 +378,12 @@ module Campfire
       if !live && etag.nil? && last_modified.nil? && (status == 200 || status == 201) && body.is_a?(String) && !body.empty?
         # OpenSSL (SHA-NI) is ~7x faster than Digest::SHA256 on a 450KB page; one per Ractor
         # since OpenSSL::Digest.hexdigest is an unshareable define_method Proc.
-        digest = (parts = PageParts.of(body)) && PageParts.digest(body, parts)
-        digest ||= (Ractor[:campfire_sha256] ||= OpenSSL::Digest.new("SHA256")).reset.update(body).digest
+        if (parts = PageParts.of(body))
+          digest = PageParts.digest(body, parts)
+        else
+          digest = (Ractor[:campfire_sha256] ||= OpenSSL::Digest.new("SHA256")).reset.update(body).digest
+          PageParts.digested(body, digest)
+        end
         etag = +"W/\"" << digest.unpack1("H32") << "\""
         fields << [ETAG, etag]
         digested = true

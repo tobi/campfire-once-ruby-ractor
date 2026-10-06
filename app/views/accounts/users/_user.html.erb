@@ -13,7 +13,7 @@
 
 <% if admin_view && user.active? %>
 <% unless user.bot? %>
-      <form data-controller="form" action="/account/users/<%= user.id %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><%= form_token("/account/users/#{user.id}", "patch") %>
+      <form data-controller="form" action="/account/users/<%= user.id %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
         <label class="btn txt-small flex-item-no-shrink" for="role_user_<%= user.id %>">
           <span class="for-screen-reader">Role: <%= user.administrator? ? "Administrator" : "Member" %></span>
           <img aria-hidden="true" src="<%== asset_path("crown.svg") %>" width="20" height="20" />
@@ -25,7 +25,7 @@
       <form class="button_to" method="post" action="/account/users/<%= user.id %>"><input type="hidden" name="_method" value="delete" /><button class="btn txt-small flex-item-no-shrink btn--negative" data-turbo-confirm="Are you sure you want to permanently remove this person from the account? This can’t be undone." type="submit">
         <img aria-hidden="true" src="<%== asset_path("minus.svg") %>" width="20" height="20" />
         <span class="for-screen-reader">Delete <%= user.name %></span>
-</button><%= form_token("/account/users/#{user.id}", "delete") %></form><%= nil -%>
+</button></form><%= nil -%>
 <% end %>
 <% end %>
 <% if self_row %>

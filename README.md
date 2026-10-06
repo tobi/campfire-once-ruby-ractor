@@ -4,7 +4,7 @@ A port of [ONCE Campfire](https://github.com/basecamp/once-campfire) to Ruby 4.0
 [Falcon](https://github.com/socketry/falcon) serving from worker Ractors in a single process, plain
 modules over SQLite, and in-process job and cable Ractors joined by message passing. It reads the
 Rails app's SQLite database, storage layout and signed/encrypted cookies unchanged, and aims for
-**byte-identical HTML** to the Rails app.
+**byte-identical HTML** to the Rails app, apart from a few [deliberate differences](#deliberate-differences-from-rails).
 
 This is an experiment in how fast idiomatic-but-careful Ruby can serve a real Rails app's workload
 once the framework is gone. It stands on three reference repositories:
@@ -17,19 +17,40 @@ once the framework is gone. It stands on three reference repositories:
 
 ## Status
 
-- **Parity:** passes the Rust repo's full parity suite against the Rails reference (HTML, DOM,
-  accessibility trees, assets, Cable frames, screenshots): default seed 874/874, crowd 25/25,
-  custom_styles 33/33, first_run 16/16, restricted 8/8.
+- **Parity:** before the deliberate differences below, passed the Rust repo's full parity suite
+  against the Rails reference (HTML, DOM, accessibility trees, assets, Cable frames, screenshots):
+  default seed 874/874, crowd 25/25, custom_styles 33/33, first_run 16/16, restricted 8/8. The
+  suite has not been rerun since.
 - **Not production-hardened.** No TLS/ACME front server (run it behind a proxy), no backup hooks,
   and no upgrade testing beyond sharing the seed databases with Rails, Go and Rust.
 - Jobs (push, webhooks, unfurls, media) are in-process like the Go and Rust ports: queued jobs are
   lost on a crash.
 
+### Deliberate differences from Rails
+
+These follow the Rust port's [known differences](https://github.com/basecamp/once-campfire-rust#known-differences):
+
+- **CSRF:** `Sec-Fetch-Site` replaces authenticity tokens, as Rails main's
+  `protect_from_forgery using: :header_only` does. Writes accept `same-origin` and `same-site`,
+  reject `cross-site` and missing headers with 422, and keep the `Origin` check. With `DISABLE_SSL`
+  set (plain HTTP), a missing header is accepted over HTTP (the `SameSite=Lax` cookies protect it). Pages carry no
+  csrf-token meta tag or `authenticity_token` fields, so a page renders the same until what it
+  shows changes. HTTPS forms need a browser that sends the header (Safari 16.4 or newer).
+  [`app/assets/overrides`](app/assets/overrides) holds the one frontend change this needs.
+- **Caching:** HTML ETags hash the page's parts and repeat until the page changes, so revalidation
+  gets a 304. Every part of a page (cached fragments and the layout between them) is compressed
+  once and kept; a page without fragments keeps its gzip by body digest.
+- **Cookies:** the session cookie is written only when the session changed, and deleted when it is
+  empty. `session_token` is re-signed with the hourly activity refresh instead of on every request
+  (its 20-year expiry keeps rolling); `last_room` is set only when it changes.
+- **Routes:** `/rooms/directs/:id` redirects to the room instead of answering 500.
+
 ## Performance
 
 Unmodified production images, the Rust repo's default seed and `bench/run-all` (its `bench/run`
 plus Go and Ruby). Each app gets 4 pinned hardware threads (CPUs 8-11) on an AMD Ryzen Threadripper
-PRO 7975WX, the load generator another 4. Medians of three interleaved reps on October 5, 2026:
+PRO 7975WX, the load generator another 4. Medians of three interleaved reps on October 5, 2026, before
+the deliberate differences above:
 [Rails/Rust/Ruby report](bench/results/rails-rust-ruby-20261005/report.md),
 [Go/Rust/Ruby report](bench/results/go-rust-ruby-20261005/report.md).
 
@@ -85,11 +106,10 @@ comes from. The [porting guide](docs/PORTING.md) has the details and the rules; 
   about 20× cheaper than autocommit.
 - **Rendering without allocation.** ERB templates compile to methods that append into one
   pre-sized String per response. Rails-style fragment caches are per Ractor, and gzipped pages are
-  spliced together from pre-compressed fragments ([`page_parts.rb`](lib/campfire/page_parts.rb)).
-- **Rails wire contracts, not Rails.** Signed/encrypted cookies, CSRF tokens, signed ids, Active
-  Storage URLs, the Action Cable protocol and Turbo Streams are reimplemented where the browser or
-  the database can see them ([`lib/campfire/rails_compat`](lib/campfire/rails_compat)), and
-  nowhere else.
+  spliced together from pre-compressed parts ([`page_parts.rb`](lib/campfire/page_parts.rb)).
+- **Rails wire contracts, not Rails.** Signed/encrypted cookies, signed ids, Active Storage URLs,
+  the Action Cable protocol and Turbo Streams are reimplemented where the browser or the database
+  can see them ([`lib/campfire/rails_compat`](lib/campfire/rails_compat)), and nowhere else.
 - **Patched Extralite.** [`vendor/gems/extralite`](vendor/gems/extralite) fixes two crashes
   (finalizing FTS5 statements on close, and reusing a statement freed by a failed `execute`).
 
@@ -107,6 +127,9 @@ docker run -d -p 3000:80 \
 ```
 
 It serves plain HTTP only; put a TLS proxy in front. An empty database gets the Rails schema on first boot; an existing Campfire database is used as is.
+As in the Rails app, `DISABLE_SSL` (unset by default) says the site is reached over plain HTTP:
+only then are writes without `Sec-Fetch-Site` accepted, since browsers send that header only to
+HTTPS and localhost origins.
 Point it at a copy of a Rails install's `storage/` with that install's `SECRET_KEY_BASE` and existing
 sessions keep working.
 
@@ -140,7 +163,7 @@ bench/run-all --apps reference,go,rust,ruby --reps 3     # needs the four images
 ```
 
 For quick checks against a running Rails reference, `bin/parity /rooms/123` diffs one page with
-CSRF tokens normalised.
+the Rails CSRF tokens removed.
 
 ## License
 

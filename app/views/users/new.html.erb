@@ -1,7 +1,7 @@
 <%# locals: (join_code:) %>
 
 
-<form class="center" enctype="multipart/form-data" action="/join/<%= join_code %>" accept-charset="UTF-8" method="post"><%= hidden_per_form_token("/join/#{join_code}", "post") %>
+<form class="center" enctype="multipart/form-data" action="/join/<%= join_code %>" accept-charset="UTF-8" method="post">
   <section class="nametag u-relative">
     <div class="flex justify-center align-center pad-block">
       <img class="nametag__lanyard" aria-hidden="true" src="<%== asset_path("lanyard.svg") %>" />

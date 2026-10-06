@@ -11,10 +11,13 @@ module Campfire
         set_room if @action == :edit || @action == :destroy
       end
 
-      # Routed (resources :directs) but upstream has no rooms/directs/show
-      # template, so every request ends in the public 500 page.
+      # Routed (resources :directs) but upstream has no rooms/directs/show template, so Rails
+      # answers 500. Deliberate divergence (as once-campfire-rust): redirect to the room page,
+      # which checks membership.
       def show
-        text(Assets.file("/500.html")&.body || "", 500, PUBLIC_HTML)
+        id = params["id"].to_s
+        not_found! unless id.match?(/\A\s*[+-]?\d/)
+        redirect_to("/rooms/#{id.to_i}")
       end
 
       def new

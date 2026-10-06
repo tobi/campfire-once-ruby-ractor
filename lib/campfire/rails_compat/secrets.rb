@@ -4,7 +4,6 @@ require_relative "util"
 require_relative "message_verifier"
 require_relative "message_encryptor"
 require_relative "global_id"
-require_relative "csrf"
 require_relative "cookies"
 
 module Campfire
@@ -194,19 +193,6 @@ module Campfire
       # (A non-string payload is returned as-is, like Rails.)
       def verified_stream_name(signed)
         @turbo_verifier.verified(signed)
-      end
-
-      # ---- CSRF conveniences (stateless, see CSRF) -------------------------
-
-      def generate_csrf_token = CSRF.generate_session_token
-
-      # Masked global token (csrf_meta_tags / forms without per-form options).
-      def mask_csrf_token(session_token, action: nil, method: nil, request_path: "/")
-        CSRF.masked_token(session_token, action: action, method: method, request_path: request_path)
-      end
-
-      def valid_csrf_token?(session_token, encoded, request_path: nil, request_method: nil)
-        CSRF.valid_authenticity_token?(session_token, encoded, request_path: request_path, request_method: request_method)
       end
 
       def inspect = "#<#{self.class.name}>"

@@ -564,10 +564,10 @@ module Campfire
       File.unlink(tmp) if tmp && File.exist?(tmp)
     end
 
-    # DirectUploadsController#create (CSRF + session required).
+    # DirectUploadsController#create (forgery protection + session required).
     def direct_upload(request)
       db = DB.connection
-      return head(422) unless csrf_ok?(request)
+      return head(422) unless forgery_ok?(request)
       return head(401) unless authenticated?(request, db)
       body = request.body&.join || +""
       type = request.headers["content-type"]&.to_s || ""
@@ -609,12 +609,11 @@ module Campfire
       !db.query_single_splat("SELECT 1 FROM sessions WHERE token = ? LIMIT 1".freeze, token).nil?
     end
 
-    def csrf_ok?(request)
-      return false unless RailsCompat::CSRF.valid_request_origin?(request.headers["origin"]&.to_s, origin(request))
-      raw = RailsCompat.cookie_value(request.headers["cookie"]&.to_s, "_campfire_session") or return false
-      session = Cache.session(raw)
-      token = request.headers["x-csrf-token"]&.to_s
-      Campfire.secrets.valid_csrf_token?(session["_csrf_token"], token, request_path: request.path.split("?", 2)[0], request_method: "POST")
+    # verify_authenticity_token by Sec-Fetch-Site (RailsCompat::CSRF), as controllers do.
+    def forgery_ok?(request)
+      o = origin(request)
+      ssl = Campfire.config.force_ssl || o.start_with?("https:")
+      RailsCompat::CSRF.valid_request?(request.headers["origin"]&.to_s, o, request.headers["sec-fetch-site"]&.to_s, ssl)
     end
 
     def origin(request)

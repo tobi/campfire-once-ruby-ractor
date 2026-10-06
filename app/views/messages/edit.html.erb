@@ -12,7 +12,7 @@
 </button>        </div>
       <% else %>
         <div class="composer--edit composer--rich-text">
-          <form id="form_message_<%== message.client_message_id %>" data-controller="form" data-action="lexxy:file-accept-&gt;form#preventAttachment keydown.esc-&gt;form#cancel keydown.ctrl+enter-&gt;form#submit:prevent keydown.meta+enter-&gt;form#submit:prevent" action="<%== mpath %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" /><input type="hidden" name="authenticity_token" value="<%== form_authenticity_token(mpath, "patch") %>" />
+          <form id="form_message_<%== message.client_message_id %>" data-controller="form" data-action="lexxy:file-accept-&gt;form#preventAttachment keydown.esc-&gt;form#cancel keydown.ctrl+enter-&gt;form#submit:prevent keydown.meta+enter-&gt;form#submit:prevent" action="<%== mpath %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" />
             <div class="full-width input input--actor min-width fill-white">
               <lexxy-editor rows="1" class="input lexxy-content" aria-multiline="true" aria-label="Edit message" autofocus="autofocus" permitted-attachment-types="application/vnd.campfire.mention application/vnd.actiontext.opengraph-embed" data-action="lexxy:change-&gt;typing-notifications#start keydown-&gt;composer#submitByKeyboard:capture" data-direct-upload-url="<%= base_url %>/rails/active_storage/direct_uploads" data-blob-url-template="<%= base_url %>/rails/active_storage/blobs/redirect/:signed_id/:filename" id="message_body" input="message_body_trix_input_message_<%== message.client_message_id %>" name="message[body]" value="<%= editable_body(message) %>">
                 <lexxy-prompt trigger="@" name="mention" src="/autocompletable/users?room_id=<%== message.room_id %>" remote-filtering="true" empty-results="No matches"></lexxy-prompt>
@@ -39,6 +39,6 @@
         <span class="for-screen-reader">Close editor and discard changes</span>
 </a>    </div>
 
-    <form id="delete_form_message_<%== message.client_message_id %>" data-turbo-frame="edit_message_<%== message.client_message_id %>" action="<%== mpath %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="delete" /><input type="hidden" name="authenticity_token" value="<%== form_authenticity_token(mpath, "delete") %>" />
+    <form id="delete_form_message_<%== message.client_message_id %>" data-turbo-frame="edit_message_<%== message.client_message_id %>" action="<%== mpath %>" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="delete" />
   </div>
 </turbo-frame>

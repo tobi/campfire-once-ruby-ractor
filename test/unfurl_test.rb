@@ -381,7 +381,6 @@ class UnfurlLinksControllerTest < Minitest::Test
     FakeNet.install!({ "www.example.com" => [["93.184.216.34"]], "example.com" => [["93.184.216.35"]] },
       ["93.184.216.34", "93.184.216.35"], @server.port)
     @client = AppHarness::Client.new
-    @client.csrf!
   end
 
   def teardown = @server.close
@@ -418,10 +417,10 @@ class UnfurlLinksControllerTest < Minitest::Test
 
   # A request whose only Accept is application/json (Mime[formats.first] is JSON).
   def json_post(body)
-    cookies = @client.instance_variable_get(:@cookies).map { |k, v| "#{k}=#{v}" }.join("; ")
+    cookies = @client.cookies.map { |k, v| "#{k}=#{v}" }.join("; ")
     h = Protocol::HTTP::Headers.new
     { "user-agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-      "accept" => "application/json", "cookie" => cookies, "x-csrf-token" => @client.csrf,
+      "accept" => "application/json", "cookie" => cookies, "sec-fetch-site" => "same-origin",
       "content-type" => "application/x-www-form-urlencoded" }.each { |k, v| h.add(k, v) }
     req = Protocol::HTTP::Request.new("http", AppHarness::HOST, "POST", "/unfurl_link", "HTTP/1.1", h, Protocol::HTTP::Body::Buffered.wrap(body))
     res = AppHarness.app.call(req)

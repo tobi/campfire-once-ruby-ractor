@@ -102,8 +102,10 @@ module Campfire
       end
     end
 
+    # Only when it changes: Rails sets it on every room page.
     def remember_last_room_visited
-      set_cookie("last_room", @room.id.to_s, expires: Campfire.secrets.permanent_expiry, same_site: "lax")
+      id = @room.id.to_s
+      set_cookie("last_room", id, expires: Campfire.secrets.permanent_expiry, same_site: "lax") unless cookies["last_room"] == id
     end
 
     def ensure_can_administer(record = nil)

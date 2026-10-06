@@ -281,8 +281,11 @@ class StorageTest < Minitest::Test
     assert_equal 404, dispatch(request(expired)).status
   end
 
-  def test_uploads_require_session_and_csrf
-    assert_equal 422, dispatch(request("/rails/active_storage/direct_uploads", method: "POST")).status
+  def test_uploads_require_session_and_same_site_requests
+    uploads = "/rails/active_storage/direct_uploads"
+    assert_equal 422, dispatch(request(uploads, method: "POST", headers: [["sec-fetch-site", "cross-site"]])).status
+    assert_equal 422, dispatch(request(uploads, method: "POST", headers: [["origin", "http://evil.example"]])).status
+    assert_equal 401, dispatch(request(uploads, method: "POST", headers: [["sec-fetch-site", "same-origin"]])).status
     assert_equal 401, dispatch(request(S.upload_path(blob(13)), method: "PUT")).status
   end
 

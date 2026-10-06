@@ -4,7 +4,7 @@
   <div class="panel <%= "shake" if flash["alert"] %>">
     <%= account_logo_tag(style: "center margin-block-end txt-xx-large") %>
 
-    <form class="flex flex-column gap" action="<%= base_url %>/session" accept-charset="UTF-8" method="post"><%= hidden_per_form_token("/session", "post") %>
+    <form class="flex flex-column gap" action="<%= base_url %>/session" accept-charset="UTF-8" method="post">
       <fieldset class="flex flex-column gap center-block upad">
         <legend class="txt-large txt-align-center"><strong><%= account&.name %></strong></legend>
 

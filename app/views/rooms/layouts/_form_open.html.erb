@@ -1,7 +1,7 @@
 <%# locals: (room:, action:, admin:, transition:) %>
 <section class="panel txt-align-center" style="view-transition-name: <%= transition %>">
   
-  <form action="<%= action %>" accept-charset="UTF-8" method="post"><% if room.id %><input type="hidden" name="_method" value="patch" /><%= form_token(action, "patch") %><% else %><%= form_token(action) %><% end %>
+  <form action="<%= action %>" accept-charset="UTF-8" method="post"><% if room.id %><input type="hidden" name="_method" value="patch" /><% else %><% end %>
   <div class="flex align-center gap">
 <% if admin %>
       <%= translation_button(:room_name) %>
