@@ -151,8 +151,9 @@ module Campfire
       end
     end
 
+    # A write of the value the session already holds changes nothing, so no cookie goes out.
     def session_write(key, value)
-      session
+      return if session[key] == value && @session.key?(key)
       @session = @session.dup if @session.frozen?
       @session[key] = value
       @session_dirty = true
@@ -170,14 +171,18 @@ module Campfire
       @session_dirty = true
     end
 
+    # Unlike Rails, the session cookie is written only when the session changed, and deleted once
+    # it holds nothing but its id (and the _csrf_token Rails sessions carry, which no longer counts).
     def commit_session
       return unless @session_dirty
-      # Rails' CookieStore discards a cookie session that has no session_id
-      # (it starts a fresh one, losing _csrf_token), so always write one.
-      unless @session.key?("session_id")
-        @session = @session.dup if @session.frozen?
-        @session["session_id"] = SecureRandom.hex(16)
+      if @session.each_key.all? { |k| k == "session_id" || k == "_csrf_token" }
+        delete_cookie(SESSION_COOKIE) if cookies[SESSION_COOKIE]
+        return
       end
+      @session = @session.dup if @session.frozen?
+      @session.delete("_csrf_token")
+      # Rails' CookieStore discards a cookie session that has no session_id, so always write one.
+      @session["session_id"] ||= SecureRandom.hex(16)
       expires = Campfire.secrets.permanent_expiry
       value = Campfire.secrets.encrypt_cookie(SESSION_COOKIE, @session, expires: expires)
       set_cookie(SESSION_COOKIE, value, expires: expires, httponly: true, same_site: "lax")
@@ -207,29 +212,14 @@ module Campfire
       end
     end
 
-    # ---- CSRF -----------------------------------------------------------
+    # ---- forgery protection -------------------------------------------
 
-    def csrf_token
-      @csrf_token ||= begin
-        real = session["_csrf_token"]
-        unless real
-          real = SecureRandom.urlsafe_base64(32)
-          session_write("_csrf_token", real)
-        end
-        Campfire.secrets.mask_csrf_token(real)
-      end
-    end
-
+    # verify_authenticity_token by Sec-Fetch-Site rather than tokens (RailsCompat::CSRF). A write
+    # without the header passes only when neither the app (force_ssl) nor the request uses SSL.
     def verified_request?
       return true if get?
-      real = session["_csrf_token"]
-      return false unless real
-      return false unless RailsCompat::CSRF.valid_request_origin?(header("origin")&.to_s, base_url)
-      token = params["authenticity_token"] || header("x-csrf-token")&.to_s
-      # Per-form tokens are bound to the Rack::MethodOverride'd verb (button_to method: :delete).
-      verb = @request.method
-      verb = params["_method"].to_s.upcase if verb == "POST" && params["_method"]
-      token && Campfire.secrets.valid_csrf_token?(real, token, request_path: @path, request_method: verb)
+      ssl = Campfire.config.force_ssl || scheme == "https"
+      RailsCompat::CSRF.valid_request?(header("origin")&.to_s, base_url, header("sec-fetch-site")&.to_s, ssl)
     end
 
     # ---- authentication -----------------------------------------------
@@ -256,18 +246,20 @@ module Campfire
       end
     end
 
+    # The session's activity is refreshed at most hourly, and the session_token cookie is re-signed
+    # on the same schedule rather than on every request as Rails does: its 20-year expiry keeps
+    # rolling without a cookie on every response.
     def resume_session(s)
-      if Clock.to_time(s.last_active_at) < Time.now - ACTIVITY_REFRESH
-        s.resume!(@db, user_agent, remote_ip)
-      end
-      authenticated_as(s)
+      refresh = Clock.to_time(s.last_active_at) < Time.now - ACTIVITY_REFRESH
+      s.resume!(@db, user_agent, remote_ip) if refresh
+      authenticated_as(s, cookie: refresh)
     end
 
-    def authenticated_as(s)
+    def authenticated_as(s, cookie: true)
       @current_session = s
       @current_user = User.find(@db, s.user_id)
       @authenticated_by = :session
-      set_cookie(TOKEN_COOKIE, Cache.signed_session_token(s.token), expires: Campfire.secrets.permanent_expiry, httponly: true, same_site: "lax")
+      set_cookie(TOKEN_COOKIE, Cache.signed_session_token(s.token), expires: Campfire.secrets.permanent_expiry, httponly: true, same_site: "lax") if cookie
     end
 
     def start_new_session_for(user)

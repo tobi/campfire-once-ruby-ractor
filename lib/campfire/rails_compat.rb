@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Rails-compatible signing, encryption, cookie and CSRF primitives for the
+# Rails-compatible signing, encryption, cookie and forgery-protection primitives for the
 # Campfire port, byte-compatible with Rails 8.2 (load_defaults 8.2) as the
 # upstream app configures it. Pure Ruby over stdlib openssl/json (Base64 via
 # pack/unpack). Every constant is deeply frozen and all state lives in the
@@ -18,7 +18,7 @@
 #   rails_compat/message_verifier.rb  Metadata envelopes + MessageVerifier
 #   rails_compat/message_encryptor.rb aes-256-gcm MessageEncryptor
 #   rails_compat/cookies.rb           Rack cookie escaping, parsing, Set-Cookie
-#   rails_compat/csrf.rb              authenticity tokens + origin check
+#   rails_compat/csrf.rb              Sec-Fetch-Site + origin check (no tokens)
 #   rails_compat/global_id.rb         GID parsing, unverified attachable sgids
 #   rails_compat/secrets.rb           everything keyed by SECRET_KEY_BASE
 

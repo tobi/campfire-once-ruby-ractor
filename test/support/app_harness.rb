@@ -73,23 +73,23 @@ module AppHarness
     db.execute("INSERT INTO sessions (user_id, token, last_active_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", DAVID, token, now, now, now)
   end
 
-  # A browser-ish client: keeps cookies, sends the page's CSRF token.
+  # A browser-ish client: keeps cookies, and marks its writes same-origin by Sec-Fetch-Site, as
+  # the app's own pages make them.
   class Client
+    SAME_ORIGIN = { "sec-fetch-site" => "same-origin" }.freeze
+
     def initialize
       @cookies = {}
       AppHarness.cookie_header.split(/;\s*/).each { |kv| k, v = kv.split("=", 2); @cookies[k] = v if v }
-      @csrf = nil
     end
 
-    attr_reader :csrf
+    attr_reader :cookies
 
     def get(path, headers = {}) = request("GET", path, nil, headers)
 
     def form(method, path, params, headers = {})
       body = URI.encode_www_form(params)
-      h = { "content-type" => "application/x-www-form-urlencoded" }.merge(headers)
-      h["x-csrf-token"] ||= @csrf if @csrf
-      request(method, path, body, h)
+      request(method, path, body, { "content-type" => "application/x-www-form-urlencoded" }.merge(SAME_ORIGIN, headers))
     end
 
     def multipart(path, fields, file_field, filename, type, data)
@@ -100,14 +100,7 @@ module AppHarness
       end
       body << "--#{boundary}\r\nContent-Disposition: form-data; name=\"#{file_field}\"; filename=\"#{filename}\"\r\nContent-Type: #{type}\r\n\r\n".b
       body << data.b << "\r\n--#{boundary}--\r\n".b
-      request("POST", path, body, { "content-type" => "multipart/form-data; boundary=#{boundary}", "x-csrf-token" => @csrf })
-    end
-
-    # Loads a page to pick up the session's CSRF token.
-    def csrf!(path = "/rooms/486777696")
-      r = get(path)
-      @csrf = r.body[/name="csrf-token" content="([^"]+)"/, 1]
-      r
+      request("POST", path, body, { "content-type" => "multipart/form-data; boundary=#{boundary}" }.merge(SAME_ORIGIN))
     end
 
     def request(method, path, body, headers)

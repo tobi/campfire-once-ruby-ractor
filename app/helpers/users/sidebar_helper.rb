@@ -2,7 +2,7 @@
 
 module Campfire
   # Users::SidebarHelper plus the small shared bits the sidebar, search and
-  # session pages need (avatar URLs, signed stream names, per-form CSRF).
+  # session pages need (avatar URLs, signed stream names).
   module Helpers
     ROOM_DOM_KEYS = { "Rooms::Open" => "rooms_open", "Rooms::Closed" => "rooms_closed", "Rooms::Direct" => "rooms_direct" }.freeze
     STREAM_SOURCE_OPEN = '<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="'
@@ -25,22 +25,6 @@ module Campfire
         Campfire.secrets.signed_stream_name(RailsCompat::GID.build("User", user_id).to_param, "rooms")
       }
       @b << STREAM_SOURCE_CLOSE
-      nil
-    end
-
-    # button_to's per-form authenticity token (action path + method), masked
-    # once per request: repeated forms (sidebar placeholders) share the masked
-    # value, which Rails accepts like any other mask of the same token.
-    def per_form_token(action_path, method)
-      by_path = ((@per_form_tokens ||= {})[method] ||= {})
-      by_path[action_path] ||= begin
-        csrf_token
-        RailsCompat::CSRF.mask(RailsCompat::CSRF.per_form_token(RailsCompat::CSRF.raw_token(session["_csrf_token"]), action_path, method))
-      end
-    end
-
-    def hidden_per_form_token(action_path, method)
-      @b << '<input type="hidden" name="authenticity_token" value="' << per_form_token(action_path, method) << '" />'
       nil
     end
 
@@ -73,7 +57,7 @@ module Campfire
     end
 
     # users/sidebars/rooms/_direct_placeholder: the button is cached per user
-    # (it depends only on id, name and updated_at); the token is per render.
+    # (it depends only on id, name and updated_at).
     def sidebar_direct_placeholder(id, name, updated_at)
       @b << Cache.fragment(:sidebar_placeholder, id, updated_at) {
         outer = @b
@@ -85,7 +69,6 @@ module Campfire
           @b = outer
         end
       }
-      hidden_per_form_token("/rooms/directs", "post")
       @b << "</form>"
       nil
     end

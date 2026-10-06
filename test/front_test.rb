@@ -117,7 +117,23 @@ class FrontTest < Minitest::Test
     assert_equal ["Accept,Accept-Encoding"], get(ROOM, "accept" => "*/*").all("vary")
   end
 
-  # (Pages carrying a CSRF token never match: the masked token changes per request.)
+  # Pages carry no per-request CSRF token, so a page renders the same until what it shows
+  # changes: its ETag repeats and revalidation is a 304. Nor does a repeat request send cookies.
+  def test_room_page_revalidates_and_sends_no_cookies_when_nothing_changed
+    cookie = AppHarness.cookie_header.split(/;\s*/).reject { _1.start_with?("last_room=") }.push("last_room=486777696").join("; ")
+    page = ->(headers = {}) { request("GET", ROOM, { "accept-encoding" => GZIP, "accept" => CHROME_ACCEPT, "cookie" => cookie }.merge(headers), false) }
+    page.call # refreshes the session's activity if it is over an hour old
+    first = page.call
+    second = page.call
+    assert_equal 200, second.status
+    assert_equal first["etag"], second["etag"]
+    assert_equal first.text, second.text
+    assert_empty second.all("set-cookie")
+    reply = page.call("if-none-match" => second["etag"])
+    assert_equal 304, reply.status
+    assert_empty reply.body
+  end
+
   def test_rendered_response_with_matching_etag_is_a_304
     etag = get("/webmanifest.json", "accept" => "*/*")["etag"]
     reply = get("/webmanifest.json", "accept" => "*/*", "if-none-match" => etag)

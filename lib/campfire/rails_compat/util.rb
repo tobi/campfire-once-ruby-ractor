@@ -238,13 +238,6 @@ module Campfire
         (b >= 0 && b <= 9) ? b : -100_000
       end
 
-      # ---- Comparison -----------------------------------------------------
-
-      # ActiveSupport::SecurityUtils.secure_compare: length leaks, content doesn't.
-      def secure_compare(a, b)
-        a.bytesize == b.bytesize && OpenSSL.fixed_length_secure_compare(a, b)
-      end
-
       # `Object#blank?` for the strings a signed message is split into.
       def blank?(s) = s.empty? || BLANK_RE.match?(s)
 

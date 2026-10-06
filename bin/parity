@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Fetch a path from the Rails reference and from our server, normalise the
-# random CSRF tokens, and print a unified diff (exit 0 when identical).
+# Fetch a path from the Rails reference and from our server, drop the Rails CSRF
+# tokens (we carry none: forgery protection is by Sec-Fetch-Site), and print a
+# unified diff (exit 0 when identical).
 #
 #   bin/parity /rooms/486777696
 #   bin/parity '/rooms/486777696/messages?before=933434650'
@@ -24,8 +25,9 @@ ref_host="${REF#*://}"
 
 norm() {
   sed -E \
-    -e 's/(name="authenticity_token" value=")[^"]*/\1TOKEN/g' \
-    -e 's/(name="csrf-token" content=")[^"]*/\1TOKEN/g'
+    -e '/^ *<meta name="csrf-param" content="authenticity_token" \/>$/d' \
+    -e '/^<meta name="csrf-token" content="[^"]*" \/>$/d' \
+    -e 's/<input type="hidden" name="authenticity_token" value="[^"]*"( autocomplete="off")? \/>//g'
 }
 
 fetch() {

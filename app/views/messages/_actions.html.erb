@@ -9,9 +9,9 @@
 
     <div class="message__actions-menu border shadow" data-popup-target="menu">
       <div class="quick-boosts">
-        <% boosts_path = "/messages/#{message.id}/boosts"; token = form_authenticity_token(boosts_path, "post") %>
+        <% boosts_path = "/messages/#{message.id}/boosts" %>
         <% Campfire::Helpers::REACTIONS.each do |character, title| %>
-          <form data-turbo-frame="boosting_message_<%= message.client_message_id %>" data-action="popup#close" action="<%== boosts_path %>" accept-charset="UTF-8" method="post"><% if token %><input type="hidden" name="authenticity_token" value="<%== token %>" /><% end %>
+          <form data-turbo-frame="boosting_message_<%= message.client_message_id %>" data-action="popup#close" action="<%== boosts_path %>" accept-charset="UTF-8" method="post">
             <input type="hidden" name="boost[content]" id="boost_content" value="<%== character %>" />
             <button name="button" type="submit" title="<%== title %>" class="btn message__action-btn" data-emoji="<%== character %>">
               <figure class="margin-none boost-character"><%== character %></figure>

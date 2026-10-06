@@ -74,10 +74,6 @@ module Campfire
       def current_user = nil
       def path = "/"
 
-      # The renderer's request has no session, so protect_against_forgery? is
-      # false and forms carry no authenticity_token.
-      def form_authenticity_token(_action, _method) = nil
-
       def message_html(room, message)
         cached_message(message.context!(host_without_port, user_resolver), room_display_name(room, nil))
       end

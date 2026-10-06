@@ -207,12 +207,5 @@ module Campfire
     def editable_body(message)
       message.body ? RichText.editable(message.body, host: host_without_port, resolver: user_resolver) : ""
     end
-
-    # form_authenticity_token(form_options: { action:, method: }) for a page
-    # with per-form CSRF tokens.
-    def form_authenticity_token(action, method)
-      csrf_token
-      Campfire.secrets.mask_csrf_token(session["_csrf_token"], action: action, method: method, request_path: path)
-    end
   end
 end

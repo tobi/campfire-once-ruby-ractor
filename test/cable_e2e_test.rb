@@ -107,10 +107,8 @@ class CableE2ETest < Minitest::Test
     #    worker accepts it): the turbo-stream append reaches every worker.
     marker = "e2e cross-ractor #{SecureRandom.hex(4)}"
     res = Net::HTTP.start("127.0.0.1", PORT) do |http|
-      page = http.get("/rooms/#{ROOM}", "Cookie" => COOKIE)
-      csrf = page.body[/name="csrf-token" content="([^"]+)"/, 1] or flunk "no csrf token"
       form = URI.encode_www_form("message[body]" => marker, "message[client_message_id]" => SecureRandom.uuid)
-      http.post("/rooms/#{ROOM}/messages", form, "Cookie" => COOKIE, "X-CSRF-Token" => csrf,
+      http.post("/rooms/#{ROOM}/messages", form, "Cookie" => COOKIE, "Sec-Fetch-Site" => "same-origin",
         "Accept" => "text/vnd.turbo-stream.html, text/html", "Content-Type" => "application/x-www-form-urlencoded")
     end
     assert_equal "200", res.code

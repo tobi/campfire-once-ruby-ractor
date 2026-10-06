@@ -4,7 +4,7 @@
       <img aria-hidden="true" src="<%== asset_path("arrow-left.svg") %>" />
       <span class="for-screen-reader">Exit search </span>
 </a>
-    <form class="margin-block flex-item-grow contain flex align-center gap" data-controller="form" data-action="keydown.esc-&gt;form#cancel" action="/searches" accept-charset="UTF-8" method="post"><%= hidden_per_form_token("/searches", "post") %>
+    <form class="margin-block flex-item-grow contain flex align-center gap" data-controller="form" data-action="keydown.esc-&gt;form#cancel" action="/searches" accept-charset="UTF-8" method="post">
       <div class="composer__input flex align-center flex-item-grow gap full-width input input--actor min-width">
         <img aria-hidden="true" class="composer__input-hint colorize--black" style="view-transition-name: input-btn;" src="<%== asset_path("search.svg") %>" width="20" height="20" />
 

@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Applies app/assets/overrides (see its README) to the imported public/assets: each file is
+# written under a digest of its own bytes, and the manifest and the layout's importmap block
+# point at it instead of the reference's copy, which is removed. Safe to run again.
+require "digest"
+require "json"
+require "fileutils"
+
+root = File.expand_path("..", __dir__)
+overrides = File.join(root, "app/assets/overrides")
+assets = File.join(root, "public/assets")
+manifest_path = File.join(assets, ".manifest.json")
+head_path = File.join(root, "app/views/layouts/_assets.html")
+manifest = JSON.parse(File.read(manifest_path))
+head = File.read(head_path)
+
+Dir.glob("**/*", base: overrides).sort.each do |logical|
+  source = File.join(overrides, logical)
+  next unless File.file?(source) && File.basename(logical) != "README.md"
+  entry = manifest[logical] or abort "override-assets: #{logical} is not in the manifest"
+  body = File.binread(source)
+  ext = File.extname(logical)
+  digested = "#{logical.delete_suffix(ext)}-#{Digest::SHA1.hexdigest(body)[0, 8]}#{ext}"
+  old = entry["digested_path"]
+  next if old == digested
+  File.binwrite(File.join(assets, digested), body)
+  FileUtils.rm_f(File.join(assets, old))
+  entry["digested_path"] = digested
+  head = head.gsub("/assets/#{old}", "/assets/#{digested}")
+  puts "override-assets: #{old} -> #{digested}"
+end
+
+File.write(manifest_path, JSON.generate(manifest))
+File.write(head_path, head)

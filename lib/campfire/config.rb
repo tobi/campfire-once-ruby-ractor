@@ -7,7 +7,10 @@ module Campfire
   Config = Data.define(
     :storage_path, :database_path, :files_path, :secret_key_base, :workers, :job_workers,
     :bind, :port, :app_version, :git_revision, :vapid_public_key, :vapid_private_key,
-    :background_checkpoints # the server checkpoints the WAL off the request path (DB.checkpointer)
+    :background_checkpoints, # the server checkpoints the WAL off the request path (DB.checkpointer)
+    # production.rb's force_ssl: on unless DISABLE_SSL is set. The app is then HTTPS behind its
+    # proxy, so forgery protection refuses a write without Sec-Fetch-Site (RailsCompat::CSRF).
+    :force_ssl
   ) do
     def self.from_env(env = ENV)
       storage = File.expand_path(env.fetch("CAMPFIRE_STORAGE_PATH", "storage"), ROOT)
@@ -24,7 +27,8 @@ module Campfire
         git_revision: env.fetch("GIT_REVISION", "0"),
         vapid_public_key: env["VAPID_PUBLIC_KEY"],
         vapid_private_key: env["VAPID_PRIVATE_KEY"],
-        background_checkpoints: false
+        background_checkpoints: false,
+        force_ssl: env["DISABLE_SSL"].to_s.strip.empty?
       )
     end
   end

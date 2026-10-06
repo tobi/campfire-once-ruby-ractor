@@ -77,11 +77,6 @@ module Campfire
 
     def asset_path(logical) = Assets.path(logical)
 
-    def hidden_token_field(token = csrf_token)
-      @b << '<input type="hidden" name="authenticity_token" value="' << token << '" />'
-      nil
-    end
-
     # dom_id(record, prefix): "message_<client id>", "rooms_closed_<id>" ...
     def dom_id(record, prefix = nil)
       key = record.dom_key

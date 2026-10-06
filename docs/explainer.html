@@ -72,10 +72,12 @@
 
   <h2><small>2 · What got deleted</small>Keep the wire contracts, drop the framework</h2>
   <p>
-    The browser and the database can't tell the difference: same cookies, same CSRF tokens, same signed ids, same
+    The browser and the database can't tell the difference: same cookies, same signed ids, same
     Action Cable frames, same Active Storage URLs, the same SQLite file. Everything between them is new, smaller code.
-    The <a href="https://github.com/basecamp/once-campfire-rust">Rust repo</a>'s parity suite checks the result:
-    <strong>956 of 956</strong> checks pass across five seeds (HTML, DOM, accessibility tree, assets, Cable frames and screenshots).
+    A few behaviors differ on purpose, as in the Rust port: forgery protection is by <code>Sec-Fetch-Site</code>
+    instead of CSRF tokens, so a page renders the same until what it shows changes.
+    The <a href="https://github.com/basecamp/once-campfire-rust">Rust repo</a>'s parity suite checked the result before
+    those differences: <strong>956 of 956</strong> checks passed across five seeds (HTML, DOM, accessibility tree, assets, Cable frames and screenshots).
   </p>
   <cf-stack></cf-stack>
 
@@ -94,9 +96,10 @@
     interpolation, no <code>join</code> and no intermediate arrays, and ids come out of SQL as text. Message fragments are
     cached per Ractor and keyed like Rails' <code>cache</code> calls. But the room page is about 460&nbsp;KB of HTML, and
     gzipping it took <strong>1.9&nbsp;ms of a 2.4&nbsp;ms request</strong>. The fix, adapted from the Rust port: deflate
-    each cached fragment <em>once</em>, using the fragments before it as the dictionary, flushed to a byte boundary.
-    At request time, only the layout around the fragments (which carries the per-request CSRF tokens) is compressed;
-    the cached pieces are copied straight into the stream.
+    each part of the page <em>once</em>: every cached fragment, using the fragments before it as the dictionary, and
+    the layout text between them, using the fragment before it. Each is flushed to a byte boundary and kept. Pages
+    carry no per-request token, so at request time the stored pieces are copied straight into the stream, and the
+    ETag repeats until the page changes, so revalidation is a 304.
   </p>
   <cf-splice></cf-splice>
 
@@ -326,7 +329,7 @@ class Arch extends Visible {
         await Promise.all([this.travel(run, P.wDb(i), ruby, 600), this.wait(run, 1300)]);
         this.light(`w${i}`, `w${i}:cache`); this.say("render", "The cached message fragments (frozen Strings, per Ractor) are appended into one pre-sized response String.");
         await this.wait(run, 1500);
-        this.light(`w${i}`, `w${i}:gz`); this.say("splice", "gzip: the pre-deflated fragments are copied straight into the stream. Only the layout and its CSRF tokens are compressed now.");
+        this.light(`w${i}`, `w${i}:gz`); this.say("splice", "gzip: the pre-deflated parts of the page, fragments and layout alike, are copied straight into the stream.");
         await this.wait(run, 1400);
         this.light("browsers"); this.say("200", "The response goes back. No other Ractor was involved and no lock was taken.");
         await this.travel(run, P.fromW(i), ruby, 800);
@@ -520,7 +523,7 @@ class Splice extends Visible {
     const p = Math.min(1, this.p); const after = this.mode === "after";
     let x = 20; const top = [];
     parts.forEach(([k, w], i) => {
-      const live = !after || k === "lay";
+      const live = !after;
       const start = i / parts.length * 0.6, prog = Math.max(0, Math.min(1, (p - start) / 0.4));
       const ty = 30 + prog * 120;
       top.push(svg`<rect class=${k} x=${x} y="30" width=${w - 3} height="28" rx="3" opacity="0.35"></rect>`);
@@ -540,11 +543,11 @@ class Splice extends Visible {
         <text class="b" x="20" y="20">Rendered page, ~460 KB</text>
         ${top}
         <rect class="box" x="14" y="92" width="690" height="44" rx="8"></rect>
-        <text x="24" y="120">${after ? "deflate runs only on the layout; cached fragments arrive already compressed (green)" : "deflate (level 6) runs over every byte, on every request"}</text>
-        <text class="b" x="20" y="214">${after ? "≈0.5 ms of CPU per room page · within ~1% of compressing the page whole" : "≈2.4 ms of CPU per room page, 1.9 ms of it in gzip"}</text>
-        <text x="20" y="196"><tspan fill="var(--rails)">■</tspan> layout + CSRF tokens (different every request) &nbsp; <tspan fill="var(--ruby)">■</tspan> cached message fragments &nbsp; <tspan fill="var(--go)">■</tspan> pre-deflated piece</text>
+        <text x="24" y="120">${after ? "every part arrives already compressed (green): the layout once per distinct text, fragments once per predecessor" : "deflate (level 6) runs over every byte, on every request"}</text>
+        <text class="b" x="20" y="214">${after ? "within ~1% of compressing the page whole" : "≈2.4 ms of CPU per room page, 1.9 ms of it in gzip"}</text>
+        <text x="20" y="196"><tspan fill="var(--rails)">■</tspan> layout &nbsp; <tspan fill="var(--ruby)">■</tspan> cached message fragments &nbsp; <tspan fill="var(--go)">■</tspan> pre-deflated piece</text>
       </svg>
-      <div class="muted">Each piece is keyed by the identity of its frozen fragment String plus the fragments before it, so it stays valid until a message changes. ETags are hashed the same way, from the fragments' remembered digests.</div>
+      <div class="muted">A fragment's piece is keyed by the identity of its frozen fragment String plus the fragments before it, so it stays valid until a message changes. A layout piece is keyed by the SHA-256 of its text and of the fragment before it. The ETag hashes the parts' digests, not the body.</div>
     </div>`;
   }
 }
@@ -921,9 +924,9 @@ const DECISIONS = [
   ["Triggers for cascading callbacks",
    "Touches, unread marking and dependent deletes run inside the write that causes them, with no extra round trips from Ruby. Triggers are recreated at every boot, so databases Rails created get them too.",
    "Triggers never read SQLite's millisecond clock; touches on delete stay in Ruby. Code that writes messages or boosts must not touch the room itself."],
-  ["Byte-identical HTML, CSRF tokens included",
-   "Parity can be checked mechanically with the Rust repo's harness. Fragments cache the authenticity token exactly as Rails does.",
-   "The sidebar can't use spliced gzip: its masked tokens change on every response and its fragments are too small, so it gzips at level 6 like Rails, Go and Rust."],
+  ["Sec-Fetch-Site instead of CSRF tokens",
+   "As in the Rust port (and Rails main's header_only forgery protection): pages carry no per-request token, so a page renders the same until it changes. Every part can be compressed once, ETags repeat (304s), and fragment-free pages like the sidebar keep their gzip by body digest.",
+   "A deliberate divergence from Rails, like the /rooms/directs/:id redirect: parity checks drop the Rails token elements, and file_uploader.js is overridden so it doesn't send X-CSRF-Token. HTTPS writes need a browser that sends the header."],
   ["Extralite, patched",
    "Faster than the sqlite3 gem, and it caches prepared statements by SQL text, which suits frozen SQL literals.",
    "Two crash fixes are vendored (FTS5 statements on close; a statement freed by a failed execute stayed in the cache), to send upstream later."],

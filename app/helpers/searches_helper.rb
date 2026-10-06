@@ -29,14 +29,12 @@ module Campfire
       clear_searches_button
     end
 
-    # button_to clear_searches_url, method: :delete (absolute URL, per-form token).
+    # button_to clear_searches_url, method: :delete (absolute URL).
     def clear_searches_button
       @b << '<form class="button_to" method="post" action="'
       h(base_url)
       @b << '/searches/clear"><input type="hidden" name="_method" value="delete" /><button class="btn searches__btn" data-turbo-confirm="Are you sure you want to clear your recent searches?" type="submit">' \
-        "\n        <img aria-hidden=\"true\" src=\"" << Assets.path("broom.svg") << "\" />\n        <span class=\"for-screen-reader\">Clear recent searches</span>\n</button>"
-      hidden_per_form_token("/searches/clear", "delete")
-      @b << "</form>"
+        "\n        <img aria-hidden=\"true\" src=\"" << Assets.path("broom.svg") << "\" />\n        <span class=\"for-screen-reader\">Clear recent searches</span>\n</button></form>"
       nil
     end
 

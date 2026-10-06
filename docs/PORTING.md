@@ -4,7 +4,10 @@ Ruby 4.0.7 port of Campfire (`/home/tobi/src/once/upstream` is the source of tru
 It runs Falcon in N worker Ractors with no Rails, Rack or ActiveRecord. Architecture
 follows the Go port (`/home/tobi/src/once/ref-go`): plain modules over SQLite, in-process
 queues and an in-process cable hub. Here the queues are Ractors joined by message passing.
-Goal: **byte-identical HTML** to the Rails reference, with minimal allocations.
+Goal: **byte-identical HTML** to the Rails reference, with minimal allocations, apart from the
+deliberate differences in the README (as in the Rust port): forgery protection by `Sec-Fetch-Site`
+(pages carry no CSRF tokens), stable page ETags, cookies only when they change, and the
+`/rooms/directs/:id` redirect.
 
 ## Running
 
@@ -17,8 +20,8 @@ Goal: **byte-identical HTML** to the Rails reference, with minimal allocations.
 - Saved reference pages live in `/home/tobi/src/once/ref-html/*.html`.
 - The **same cookie works on our server** (same SECRET_KEY_BASE, same DB rows). Diff with:
   `diff <(curl -s -b "$C" :3100/rooms/486777696) <(curl -s -b "$C" :3200/rooms/486777696)`.
-  CSRF tokens are random per render, so normalise `authenticity_token` values and
-  `csrf-token` content before diffing.
+  The Rails pages carry CSRF tokens and ours carry none, so drop the Rails csrf meta tags and
+  `authenticity_token` fields before diffing (`bin/parity` does).
 - Seed labels: `tmp/seed/labels.json`. Clock is 2026-03-02T16:00:00Z.
 
 ## Code layout and conventions
@@ -29,7 +32,8 @@ Goal: **byte-identical HTML** to the Rails reference, with minimal allocations.
   `skip_forgery_protection`, and `before_action` (an instance method you override; call
   `throw :halt` after rendering to stop). See `app/controllers/application_controller.rb`
   and `lib/campfire/controller.rb` for the request API: params, cookies, session, flash,
-  current_user, csrf_token, html/turbo_stream/json/head/redirect_to.
+  current_user, html/turbo_stream/json/head/redirect_to. Writes are checked by
+  `verified_request?` (Origin + `Sec-Fetch-Site`, `RailsCompat::CSRF`); forms carry no token.
 - Missing controllers resolve to `MissingController` (501), so the app boots while incomplete.
 - `app/models/**`: `class X < Struct.new(*COLS)` with class methods taking `db` first. Use
   frozen SQL literals (Extralite caches statements by SQL text): `db.query_splat`,
@@ -47,10 +51,11 @@ Goal: **byte-identical HTML** to the Rails reference, with minimal allocations.
     identical bytes, and watch the whitespace the Rails `yield :x` produces.
   - Helpers (`app/helpers/*.rb`, `module Campfire::Helpers`) append to `@b` and return nil.
     `tag_helper.rb` has `h`, `raw`, `attrs(hash)` (Rails tag serialization), `tag`,
-    `content_tag`, `image_tag`, `hidden_token_field`, `dom_id`.
+    `content_tag`, `image_tag`, `dom_id`.
 - Fragment caching mirrors Rails `cache` / `cached: true`:
   `Cache.fragment(:message, id, updated_at) { render into a fresh String }`, per Ractor.
-  Rails also bakes the authenticity_token into cached fragments, so we do the same.
+  Nothing in a page may change per request (no tokens, nonces or clocks): a page must render the
+  same bytes until what it shows changes, which stable ETags and stored gzip parts rely on.
 - Background work goes through `Jobs.later(:kind, *ints_or_strings)` (a job Ractor pool).
   Register handlers with `Jobs.register(:kind, Mod)`, where Mod.perform(*args) builds its
   own `DB.connection`. Cross-worker events use `Bus.publish([:broadcast, stream, html])`.
@@ -60,7 +65,9 @@ Goal: **byte-identical HTML** to the Rails reference, with minimal allocations.
 - Rich text: `lib/campfire/rich_text.rb` (being written in parallel), with
   `RichText.presentation(body, host:, resolver:)`, plain_text, etc.
 - Secrets: `Campfire.secrets` (`lib/campfire/rails_compat/secrets.rb`) provides signed ids,
-  sgid, signed stream names and CSRF masking.
+  sgid and signed stream names.
+- Frontend changes the port owns go in `app/assets/overrides` (see its README), never straight into
+  `public/assets`, which `bin/import-assets` replaces.
 
 ## Performance rules
 

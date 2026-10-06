@@ -25,7 +25,6 @@ class AdminPermissionsTest < Minitest::Test
       now = Campfire::Clock.now_db
       AppHarness.db.execute("INSERT INTO sessions (user_id, token, last_active_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", user_id, token, now, now, now)
       @cookies["session_token"] = Campfire::RailsCompat.escape_cookie(Campfire::Cache.signed_session_token(token))
-      csrf!("/users/me/profile")
     end
   end
 
@@ -121,6 +120,13 @@ class AdminPermissionsTest < Minitest::Test
     assert_equal Campfire::Room::DIRECT, room(KEVINS_DIRECT).type
     assert_equal home, member.get("/rooms/directs/#{DESIGNERS}/edit").headers["location"]
     assert_equal home, member.get("/rooms/directs/#{DAVIDS_DIRECT}/edit").headers["location"]
+  end
+
+  # Deliberate divergence: Rails answers 500 (no rooms/directs/show template).
+  def test_direct_room_show_redirects_to_the_room_page
+    r = member.get("/rooms/directs/#{KEVINS_DIRECT}")
+    assert_equal [302, "http://#{AppHarness::HOST}/rooms/#{KEVINS_DIRECT}"], [r.status, r.headers["location"]]
+    assert_equal 404, member.get("/rooms/directs/nope").status
   end
 
   def test_room_destroy_requires_administering_the_room
