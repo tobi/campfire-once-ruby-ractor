@@ -21,13 +21,15 @@ module Campfire
 
     def start(count, config)
       Ractor.make_shareable(HANDLERS)
+      ractors = []
       ports = Array.new(count) do |i|
         boot = Ractor::Port.new
-        Ractor.new(boot, config, name: "jobs-#{i}") do |b, cfg|
+        ractors << Ractor.new(boot, config, name: "jobs-#{i}") do |b, cfg|
           Campfire::Jobs.run(b, cfg)
         end
         boot.receive
       end
+      const_set(:RACTORS, Ractor.make_shareable(ractors))
       const_set(:PORTS, Ractor.make_shareable(ports))
     end
 
@@ -39,7 +41,9 @@ module Campfire
       inbox = Ractor::Port.new
       boot.send(inbox)
       queue = Thread::Queue.new
-      Thread.new { loop { queue << inbox.receive } }
+      # Ends on the nil KinoServer sends at exit, as the loop below does, or Ruby's teardown waits
+      # a second more for this Ractor.
+      Thread.new { loop { queue << (job = inbox.receive); break unless job } }
       Sync do |task|
         Log.attach(task)
         gate = Async::Semaphore.new(MAX_INFLIGHT, parent: task)

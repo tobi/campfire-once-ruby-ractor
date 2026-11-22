@@ -141,6 +141,52 @@ source bin/dev-env                 # the Rust repo's fixed parity secrets, tmp/s
 bundle exec ruby bin/campfire
 ```
 
+### On Kino
+
+`CAMPFIRE_SERVER=kino` serves the same app with [Kino](https://github.com/yaroslav/kino), a Ractor
+server with a Rust (Tokio, hyper) front end, instead of Falcon; without it, no Kino code is loaded.
+Kino owns the worker Ractors, and each one's thread runs Campfire's own fiber reactor: a request
+that waits, for the write permit or a job's reply, suspends only its fiber, as on Falcon. The cable
+runs on Kino's native WebSockets: a broadcast is one publish to a Kino topic, framed once per
+subscription identifier and queued on every subscriber, instead of a trip through the Bus to every
+worker. It is all in [`kino_server.rb`](lib/campfire/kino_server.rb).
+
+Kino (0.8 or later) is in an optional Bundler group, so a Falcon install never fetches it:
+
+```sh
+bundle config set --local with kino && bundle install
+source bin/dev-env
+CAMPFIRE_SERVER=kino bundle exec ruby bin/campfire
+```
+
+`WEB_CONCURRENCY`, `JOB_CONCURRENCY`, `BIND` and `PORT` mean what they do on Falcon.
+[`Dockerfile.kino`](Dockerfile.kino) builds the image, and `bench/run-all --apps ruby,ruby-kino`
+compares the two servers. Differences:
+
+- A worker Ractor runs at most 16 requests at once, open WebSockets aside; Falcon sets no cap.
+- `INT` or `TERM` drains: Kino stops accepting, closes WebSockets with 1001 (clients reconnect),
+  lets running requests finish, gives queued jobs up to a second, and exits; a second signal exits
+  at once. Falcon exits at once.
+
+**Kino vs Falcon.** The same image and code, Kino 0.8.0 against Falcon 0.57, on an AWS
+c8a.2xlarge: the app on 4 CPUs, the load generator on 4, Ruby 4.0.9 with YJIT, the database on
+the instance's disk, `bench/run-all`'s routes, medians of three interleaved boots (November 2026):
+
+| Measurement | Falcon | Kino | Kino vs Falcon |
+|---|---:|---:|---:|
+| Room page, 16 clients | 8,889 req/s | 9,140 | **+3%** |
+| Room page p99, 64 clients | 18.7 ms | 10.6 ms | **−43%** |
+| Messages page, 64 clients | 11,285 req/s | 11,845 | **+5%** |
+| Sidebar, 1 client | 8,411 req/s | 10,741 | **+28%** |
+| Search, 16 clients | 13,900 req/s | 15,044 | **+8%** |
+| `/up`, 16 clients | 109,684 req/s | 154,719 | **+41%** |
+| Avatar, 16 clients | 166,576 req/s | 274,703 | **+65%** |
+| Cable deliveries/s, 100 clients | 1,865 | 2,254 | **+21%** |
+| Cable deliveries/s, 500 clients | 410 | 1,086 | **2.6×** |
+| Cable deliveries/s, 1,000 clients | 133 | 569 | **4.3×** |
+
+Kino also spends less CPU per request on every HTTP route.
+
 ## Testing against the references
 
 Unit and integration tests, one file at a time:

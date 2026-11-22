@@ -1,0 +1,15 @@
+# syntax = docker/dockerfile:1
+#
+# The production image (Dockerfile) and the precompiled kino gem, serving with CAMPFIRE_SERVER=kino:
+#
+#   docker build -t campfire-ruby:app .
+#   docker build -f Dockerfile.kino -t campfire-ruby:kino .
+
+ARG APP_IMAGE=campfire-ruby:app
+
+FROM ${APP_IMAGE}
+USER root
+RUN BUNDLE_WITH=kino bundle install --jobs "$(nproc)" && \
+    rm -rf "${BUNDLE_PATH}"/ruby/*/cache
+USER 1000:1000
+ENV BUNDLE_WITH=kino CAMPFIRE_SERVER=kino

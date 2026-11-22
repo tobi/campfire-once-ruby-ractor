@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require_relative "../lib/campfire"
+kino = ENV["CAMPFIRE_SERVER"] == "kino"
+require_relative "../lib/campfire/kino_server" if kino # before boot! makes constants shareable
 
 Campfire.boot!(Campfire::Config.from_env.with(background_checkpoints: true))
-Campfire::Server.run(Campfire.config)
+(kino ? Campfire::KinoServer : Campfire::Server).run(Campfire.config)
