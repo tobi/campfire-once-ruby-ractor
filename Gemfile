@@ -6,3 +6,7 @@ gem "bcrypt"
 gem "async-websocket"
 gem "erb"
 gem "json"
+# CAMPFIRE_SERVER=kino: `bundle config set --local with kino`.
+group :kino, optional: true do
+  gem "kino", "~> 0.8"
+end

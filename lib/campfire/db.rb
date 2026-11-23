@@ -131,6 +131,8 @@ module Campfire
       Ractor[:campfire_db] ||= open(Campfire.config.database_path)
     end
 
+    def close = Ractor[:campfire_db]&.close
+
     def background_checkpoints? = defined?(Campfire::CONFIG) && Campfire.config.background_checkpoints
 
     # SQLite's auto-checkpoint runs inside the COMMIT that crosses 1000 WAL pages and fsyncs
